@@ -4,6 +4,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ScreenShakeProvider } from '@/components/fx/utils/ScreenShake';
 import { Header } from '@/components/layout/Header';
+import { ServiceWorkerRegister } from '@/components/layout/ServiceWorkerRegister';
 
 const fredoka = Fredoka({
   subsets: ['latin'],
@@ -59,6 +60,7 @@ export default function RootLayout({
         <ScreenShakeProvider>
           <ToastProvider>
             <div className="w-full flex flex-col min-h-screen max-w-lg sm:border-x-2 sm:border-[#111111] bg-white shadow-[0_0_24px_rgba(0,0,0,0.06)]">
+              <ServiceWorkerRegister />
               <Header />
               <main className="flex-1 flex flex-col p-4 sm:p-6">{children}</main>
               <footer className="py-4 text-center text-xs text-[#888888] font-bold border-t border-[#E5E5E5] bg-[#FDFDFD]">

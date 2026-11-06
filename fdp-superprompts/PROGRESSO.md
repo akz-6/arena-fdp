@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 3
-- Próxima fase: 4
+- Fase concluída: 4
+- Próxima fase: 5
 
 ## Registro por fase
 ### Fase 1
@@ -84,6 +84,43 @@
   - Nenhuma. Pronto para a Fase 4 (Perfil e Singleplayer Offline).
 
 ### Fase 4
+- Feito:
+  - Sistema de Perfil Local (`src/lib/client/profile-store.ts`):
+    - Persistência em `localStorage` de `id`, `name`, `color` e estatísticas (`totalMatches`, `victories`).
+    - Geração automática de apelido cartoon e cor livre ao carregar se não existir.
+    - Página `/perfil` (`src/app/perfil/page.tsx`) com edição reativa, troca de cor via `ColorPicker`, prévia animada do avatar toon e reset de perfil.
+  - Gerenciador de Partidas Locais (`src/lib/client/local-game-store.ts`):
+    - Store Zustand com persistência em `localStorage` gerenciando lista de partidas offline salvas.
+    - Suporte a criar, carregar, atualizar e deletar partidas locais.
+  - Criação de Partida Offline e Configurações (`src/app/criar/page.tsx`):
+    - Formulário completo toon force: alternância entre Modo Presencial / Offline e Modo Online (com badge de indicação).
+    - Configurações da arena: vidas (fixas 1-15, aleatórias compartilhadas ou individuais), visibilidade (pública ou oculta), modo organizador (jogador ou observador).
+    - Roster de jogadores com adição e remoção dinâmica (2 a 12 jogadores), seleção de cor exclusiva e nomeação customizada.
+  - Tela de Partida Offline / Mesa Presencial (`src/app/local/[id]/`):
+    - Ciclo completo de partida local:
+      1. Lobby local com lista de participantes e botão de início.
+      2. Cabeçalho de rodada (`RoundHeader`): número da rodada, cartas por jogador com indicador de subida/descida do teto, baralhos em jogo e dealer destacado.
+      3. Grid de jogadores (`PlayerGrid`): avatares toon com status, vidas e coroa de host.
+      4. Painel de reporte e apuração de rodada (`ReportPanel`): seleção de vidas perdidas por jogador com validação de empate e botões de incremento/decremento.
+      5. Revelação Toon (`FxDirector`): animações de golpes e mortes sincronizadas.
+      6. Propostas e ajustes (`ProposalBar`): ajuste de vidas pelo host com histórico e suporte a desfazer rodada (`UNDO_LAST_ROUND`).
+      7. Fim de jogo e tela de vitória com opções de revanche (`REMATCH`) e voltar para a lista de partidas.
+    - Suporte a Wake Lock API (evita que a tela do celular apague durante a mesa) e Fullscreen Mode.
+  - Página de Histórico Local (`src/app/local/page.tsx`):
+    - Listagem com cards de partidas em andamento e finalizadas, retomada com um clique e exclusão.
+  - Guia Interativo de Regras (`src/app/regras/page.tsx`):
+    - Explicação das regras do jogo FDP, hierarquia completa das manilhas e cartas comuns (Zap até o 4).
+  - PWA Offline First:
+    - Service Worker (`public/sw.js`) com cache de assets estáticos e páginas offline.
+    - Componente de registro (`ServiceWorkerRegister.tsx`) injetado no layout raiz.
+  - 53 testes passando (4 novos testes de integração de perfil e singleplayer em `src/app/local/__tests__/singleplayer.test.tsx`).
+  - Linters, typecheck e build de produção 100% limpos.
+- Desvios da planta:
+  - Nenhum.
+- Pendências:
+  - Nenhuma. Pronto para a Fase 5 (Backend Supabase e API).
+
+### Fase 5
 
 ## Decisões tomadas pelo agente
 - 
