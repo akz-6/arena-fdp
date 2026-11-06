@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 6
-- Próxima fase: 7
+- Fase concluída: 7
+- Próxima fase: 8
 
 ## Registro por fase
 ### Fase 1
@@ -200,6 +200,33 @@
   - Nenhuma. Pronto para a Fase 7 (Partida Online Completa e Telão).
 
 ### Fase 7
+- Feito:
+  - Partida Online Completa em Tempo Real (`src/app/sala/[code]/`):
+    - Ciclo completo de jogo sincronizado: `lobby` -> `round` (mão física com indicação de cartas e dealer rotativo) -> `reporting` (apuração com stepper individual e indicador de quem confirmou) -> `reveal` (animações determinísticas Toon FX via seed) -> `finished` (vitória/empate com revanche).
+    - Controles de Host online: Iniciar, Encerrar Rodada, Forçar Fechamento de Rodada (`FORCE_CLOSE`), Próxima Rodada (`NEXT_ROUND`), Ajuste ±1 de vida direto (`HOST_ADJUST`), Desfazer Última Rodada (`UNDO_LAST_ROUND`), e Revanche (`REMATCH`).
+    - Papel de Espectador com entrada automática após início da partida.
+  - Sincronização Dramática Toon FX:
+    - Uso rigoroso de `lastReveal.seed` para que todos os clientes vejam as mesmas animações de golpes e mortes.
+    - Suporte a vidas ocultas: exibe quem tomou golpe e quem morreu sem vazar vida restante.
+  - Consenso de Vida Online (`ProposalBar.tsx`):
+    - Qualquer guerreiro vivo pode propor `+1` ou `-1` de vida para um alvo.
+    - Card de votação em tempo real com contagem de votos e aprovação unânime dos demais guerreiros vivos.
+    - Rejeição imediata se houver 1 voto contra.
+  - Log de Eventos da Arena ("O que rolou"):
+    - Painel recolhível exibindo eventos em tempo real em linguagem cartoon (golpes desferidos, distribuidor da vez, confirmações).
+  - Modo Telão Gigante (`/sala/[code]/telao`):
+    - Layout especial para TVs, projetores e telões sem botões de controle de jogo.
+    - Proteção por senha (pede uma única vez se a sala for protegida).
+    - Animações cartoon maximizadas (`isTelao={true}`) e Wake Lock ativo.
+  - Testes:
+    - 78 testes no Vitest passando (3 novos testes de integração multi-client com servidor simulando 3 jogadores, confirmações fora de ordem, edição antes do fechamento, consenso unânime e desfazer rodada em `src/app/sala/__tests__/online-match.test.ts`).
+  - Linters, typecheck e build de produção 100% limpos.
+- Desvios da planta:
+  - Nenhum.
+- Pendências:
+  - Nenhuma. Pronto para a Fase 8 (Polimento, Qualidade e Deploy).
+
+### Fase 8
 
 ## Decisões tomadas pelo agente
 - 

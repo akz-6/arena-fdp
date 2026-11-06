@@ -388,9 +388,37 @@ export default function RoomClient({ code }: RoomClientProps) {
       <ProposalBar
         selectedPlayer={selectedPlayer}
         canUndo={Boolean(room.prevSnapshot)}
+        activeProposal={room.proposals.find((p) => p.status === 'pending')}
+        currentUserId={me.id}
+        players={room.players}
+        isHost={isHostControl}
+        onVoteProposal={async (proposalId, approve) => {
+          try {
+            await sendAction({
+              type: 'VOTE',
+              actorId: me.id,
+              proposalId,
+              approve,
+            });
+            showToast(approve ? 'Voto de aprovação registrado!' : 'Voto contra registrado!', 'info');
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Erro ao votar';
+            showToast(msg, 'error');
+          }
+        }}
         onAdjustLife={(delta) => {
-          if (selectedPlayerId) {
+          if (!selectedPlayerId) return;
+          if (isHostControl) {
             handleHostAdjust(selectedPlayerId, delta);
+          } else {
+            sendAction({
+              type: 'PROPOSE_ADJUST',
+              actorId: me.id,
+              targetId: selectedPlayerId,
+              delta,
+            })
+              .then(() => showToast('Proposta enviada para aprovação!', 'info'))
+              .catch((err) => showToast(err.message || 'Falha ao propor ajuste', 'error'));
           }
         }}
         onUndoLastRound={isHostControl ? handleUndo : () => {}}
@@ -402,6 +430,36 @@ export default function RoomClient({ code }: RoomClientProps) {
             : undefined
         }
       />
+
+      {/* Log de Eventos Toon ("O que rolou") — Task 7.6 */}
+      <details className="bg-white border-2 border-black rounded-xl p-3 shadow-[2px_2px_0px_#111111] group">
+        <summary className="font-cartoon text-sm text-black cursor-pointer flex justify-between items-center select-none">
+          <span>📜 O QUE ROLOU NA ARENA</span>
+          <span className="text-xs text-gray-500 font-bold group-open:rotate-180 transition-transform">
+            ▼
+          </span>
+        </summary>
+        <div className="mt-3 space-y-1.5 text-xs text-gray-700 max-h-48 overflow-y-auto pt-2 border-t border-gray-100">
+          <p className="font-bold">
+            ⚔️ <strong>Rodada {room.roundNumber}</strong>: {room.cardsThisRound} carta(s) por jogador.
+          </p>
+          {dealer && (
+            <p>
+              🃏 <strong>{dealer.name}</strong> é o distribuidor de cartas da rodada.
+            </p>
+          )}
+          {room.lastReveal && (
+            <p className="text-toon-blue font-bold">
+              💥 <strong>Última Revelação:</strong> {room.lastReveal.hits.length} golpe(s) cartoon desferidos!
+            </p>
+          )}
+          {room.confirmed.length > 0 && (
+            <p className="text-green-700">
+              ✓ {room.confirmed.length} guerreiro(s) confirmaram seus danos na apuração.
+            </p>
+          )}
+        </div>
+      </details>
     </div>
   );
 }
