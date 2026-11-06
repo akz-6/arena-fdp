@@ -337,7 +337,16 @@ export function reduce(
         throw new Error('Jogador inválido para reporte de dano');
       }
 
-      const damage = Math.max(0, Math.floor(action.damage));
+      if (
+        typeof action.damage !== 'number' ||
+        !Number.isFinite(action.damage) ||
+        !Number.isInteger(action.damage) ||
+        action.damage < 0
+      ) {
+        throw new Error('Dano deve ser um número inteiro maior ou igual a zero');
+      }
+
+      const damage = action.damage;
 
       // Se o jogador alterar o dano, remove da lista de confirmados
       const newConfirmed = state.confirmed.filter((id) => id !== action.targetId);

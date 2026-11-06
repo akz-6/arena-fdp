@@ -15,6 +15,7 @@ export const Header: React.FC = () => {
               src="/logo.png"
               alt="Arena FDP Logo"
               fill
+              sizes="44px"
               className="object-contain"
               priority
             />

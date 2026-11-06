@@ -70,26 +70,27 @@ export function generateRandomName(
 ): string {
   const normalized = new Set(occupiedNames.map((n) => n.trim().toLowerCase()));
 
-  // Tenta até 50 combinações simples
-  for (let attempt = 0; attempt < 50; attempt++) {
+  // Tenta até 100 combinações simples que respeitem o limite de 16 caracteres
+  for (let attempt = 0; attempt < 100; attempt++) {
     const noun = pick(TOON_NOUNS, rng);
     const adj = pick(TOON_ADJECTIVES, rng);
     const candidate = `${noun} ${adj}`;
-    if (!normalized.has(candidate.toLowerCase())) {
+    if (candidate.length <= 16 && !normalized.has(candidate.toLowerCase())) {
       return candidate;
     }
   }
 
-  // Se houver muitas colisões, adiciona sufixo numérico
+  // Se houver colisões ou combinações longas, tenta com sufixo numérico
   for (let attempt = 1; attempt <= 1000; attempt++) {
     const noun = pick(TOON_NOUNS, rng);
     const candidate = `${noun} ${attempt}`;
-    if (!normalized.has(candidate.toLowerCase())) {
+    if (candidate.length <= 16 && !normalized.has(candidate.toLowerCase())) {
       return candidate;
     }
   }
 
-  return `Jogador ${Math.floor(rng() * 10000)}`;
+  const fallback = `Jogador ${Math.floor(rng() * 999)}`.slice(0, 16);
+  return fallback;
 }
 
 /**
