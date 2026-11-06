@@ -20,6 +20,8 @@ import { createInitialState, reduce } from '@/lib/engine/reducer';
 import { generateRandomName, pickAvailableColor } from '@/lib/engine/names';
 import { createRng } from '@/lib/engine/rng';
 import { GameConfig } from '@/lib/engine/types';
+import { api, ApiError } from '@/lib/client/api';
+import { setRoomToken } from '@/lib/client/room-tokens';
 
 interface LobbyPlayer {
   id: string;
@@ -34,10 +36,11 @@ export default function CreateRoomPage() {
   const { showToast } = useToast();
 
   // Passo 1: Modo (Singleplayer vs Online)
-  const [selectedMode, setSelectedMode] = useState<'single' | 'online'>('single');
+  const [selectedMode, setSelectedMode] = useState<'single' | 'online'>('online');
 
   // Passo 2: Configuração da Partida
   const [roomName, setRoomName] = useState('Arena FDP');
+  const [password, setPassword] = useState('');
   const [lifeMode, setLifeMode] = useState<'fixed' | 'random'>('fixed');
   const [lifeFixed, setLifeFixed] = useState(5);
   const [lifeMin, setLifeMin] = useState(3);
@@ -48,8 +51,11 @@ export default function CreateRoomPage() {
   const [showHitCount, setShowHitCount] = useState(true);
   const [hasManualCap, setHasManualCap] = useState(false);
   const [maxCardsCap, setMaxCardsCap] = useState(7);
+  const [isLimitedPlayers, setIsLimitedPlayers] = useState(false);
+  const [expectedPlayers, setExpectedPlayers] = useState(4);
+  const [isCreatingOnline, setIsCreatingOnline] = useState(false);
 
-  // Cadastro de Jogadores do Lobby Local
+  // Cadastro de Jogadores do Lobby Local (Modo Singleplayer)
   const [players, setPlayers] = useState<LobbyPlayer[]>(() => {
     const hostName = profile?.name || 'Organizador';
     const hostColor = profile?.color || '#FF3038';
@@ -67,7 +73,6 @@ export default function CreateRoomPage() {
     ];
   });
 
-  // Novo jogador formulário
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerColor, setNewPlayerColor] = useState('#2ECC71');
 
@@ -112,15 +117,7 @@ export default function CreateRoomPage() {
     setPlayers((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleCreateRoom = () => {
-    if (players.length < 2) {
-      showToast('Adicione pelo menos 2 jogadores para iniciar!', 'error');
-      return;
-    }
-
-    const hostPlayer = players[0];
-    if (!hostPlayer) return;
-
+  const handleCreateRoom = async () => {
     const gameConfig: GameConfig = {
       roomName: roomName.trim() || 'Arena FDP',
       lifeVisibility,
@@ -131,17 +128,49 @@ export default function CreateRoomPage() {
       lifeRandomScope,
       hostRole,
       showHitCount,
-      expectedPlayers: null,
+      expectedPlayers: isLimitedPlayers ? expectedPlayers : null,
       maxCardsCap: hasManualCap ? maxCardsCap : null,
       decks: 'auto',
-      operatorMode: true, // Organizador opera tudo no Singleplayer
+      operatorMode: selectedMode === 'single',
     };
+
+    // MODO ONLINE (Fase 6)
+    if (selectedMode === 'online') {
+      setIsCreatingOnline(true);
+      try {
+        const res = await api.createRoom({
+          config: gameConfig,
+          password: password.trim() || undefined,
+          hostProfile: profile
+            ? { name: profile.name, color: profile.color }
+            : undefined,
+        });
+
+        setRoomToken(res.code, res.token);
+        showToast('Arena Online criada com sucesso! 🌐', 'success');
+        router.push(`/sala/${res.code}`);
+      } catch (err) {
+        const msg = err instanceof ApiError ? err.message : 'Erro ao criar sala online';
+        showToast(msg, 'error');
+      } finally {
+        setIsCreatingOnline(false);
+      }
+      return;
+    }
+
+    // MODO SINGLEPLAYER (Local)
+    if (players.length < 2) {
+      showToast('Adicione pelo menos 2 jogadores para iniciar!', 'error');
+      return;
+    }
+
+    const hostPlayer = players[0];
+    if (!hostPlayer) return;
 
     const roomId = `local-${Date.now().toString(36)}`;
     const seed = Date.now();
     const ctx = { now: Date.now(), rng: createRng(seed) };
 
-    // 1. Cria estado com o Host
     let state = createInitialState({
       host: {
         id: hostPlayer.id,
@@ -152,7 +181,6 @@ export default function CreateRoomPage() {
       seed,
     });
 
-    // 2. Adiciona os demais jogadores
     for (let i = 1; i < players.length; i++) {
       const p = players[i];
       if (p) {
@@ -172,11 +200,8 @@ export default function CreateRoomPage() {
       }
     }
 
-    // 3. Salva no armazenamento local
     saveMatch(roomId, state);
     showToast('Partida criada com sucesso!', 'success');
-
-    // 4. Redireciona para a partida
     router.push(`/local/${roomId}`);
   };
 
@@ -187,13 +212,29 @@ export default function CreateRoomPage() {
           Criar Sala
         </h1>
         <p className="text-xs text-[#666666] font-semibold mt-1">
-          Configure a partida física e os jogadores
+          Configure a partida física e convide seus amigos
         </p>
       </div>
 
       {/* Passo 1: Modo de Jogo */}
       <ToonCard padding="sm" className="w-full">
         <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setSelectedMode('online')}
+            className={`p-3 rounded-[12px] border-2 border-[#111111] font-bold font-[family-name:var(--font-heading)] flex flex-col items-center text-center gap-1 transition-all cursor-pointer ${
+              selectedMode === 'online'
+                ? 'bg-[#35B8F4] text-white shadow-[3px_3px_0px_#111111] scale-[1.02]'
+                : 'bg-white hover:bg-[#F5F5F5] text-[#111111]'
+            }`}
+          >
+            <span className="text-2xl">🌐</span>
+            <span className="text-sm">Online</span>
+            <span className={`text-[10px] ${selectedMode === 'online' ? 'text-white/90' : 'text-[#666666]'}`}>
+              Multiplayer com link e QR
+            </span>
+          </button>
+
           <button
             type="button"
             onClick={() => setSelectedMode('single')}
@@ -206,21 +247,6 @@ export default function CreateRoomPage() {
             <span className="text-2xl">📱</span>
             <span className="text-sm text-[#111111]">Singleplayer</span>
             <span className="text-[10px] text-[#666666]">Offline • Neste aparelho</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              showToast('O modo Online será liberado nas Fases 5 e 6!', 'info');
-            }}
-            className="p-3 rounded-[12px] border-2 border-[#111111] font-bold font-[family-name:var(--font-heading)] flex flex-col items-center text-center gap-1 opacity-70 bg-[#F5F5F5] cursor-not-allowed relative"
-          >
-            <span className="text-2xl">🌐</span>
-            <span className="text-sm text-[#111111]">Online (Em Breve)</span>
-            <span className="text-[10px] text-[#666666]">Multiplayer com link e QR</span>
-            <span className="absolute top-1 right-1 bg-[#8E5CF7] text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">
-              Fase 6
-            </span>
           </button>
         </div>
       </ToonCard>
@@ -236,6 +262,17 @@ export default function CreateRoomPage() {
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
         />
+
+        {/* Senha (Opcional, apenas no Online) */}
+        {selectedMode === 'online' && (
+          <ToonInput
+            label="Senha da Sala (Opcional)"
+            type="password"
+            placeholder="Deixe em branco para sala pública"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        )}
 
         {/* Vidas: Modo */}
         <Segmented
@@ -258,22 +295,20 @@ export default function CreateRoomPage() {
           />
         ) : (
           <div className="flex flex-col gap-3 p-3 bg-[#F5F5F5] rounded-[14px] border-2 border-[#111111]">
-            <div className="grid grid-cols-2 gap-2">
-              <Stepper
-                label="Vida Mínima"
-                value={lifeMin}
-                min={1}
-                max={lifeMax}
-                onChange={setLifeMin}
-              />
-              <Stepper
-                label="Vida Máxima"
-                value={lifeMax}
-                min={lifeMin}
-                max={20}
-                onChange={setLifeMax}
-              />
-            </div>
+            <Stepper
+              label="Vida Mínima"
+              value={lifeMin}
+              min={1}
+              max={lifeMax}
+              onChange={(val) => setLifeMin(Math.min(val, lifeMax))}
+            />
+            <Stepper
+              label="Vida Máxima"
+              value={lifeMax}
+              min={lifeMin}
+              max={20}
+              onChange={(val) => setLifeMax(Math.max(val, lifeMin))}
+            />
             <Segmented
               label="Sorteio"
               value={lifeRandomScope}
@@ -286,14 +321,14 @@ export default function CreateRoomPage() {
           </div>
         )}
 
-        {/* Visibilidade das Vidas */}
+        {/* Visibilidade de Vidas */}
         <Segmented
           label="Visibilidade das Vidas"
           value={lifeVisibility}
           onChange={setLifeVisibility}
           options={[
-            { label: '👁️ Visível', value: 'visible' },
-            { label: '🕵️ Oculta', value: 'hidden' },
+            { label: 'Visível', value: 'visible' },
+            { label: 'Oculta', value: 'hidden' },
           ]}
         />
 
@@ -303,127 +338,156 @@ export default function CreateRoomPage() {
           value={hostRole}
           onChange={setHostRole}
           options={[
-            { label: '🃏 Joga Junto', value: 'player' },
-            { label: '👀 Só Marca Pontos', value: 'spectator' },
+            { label: 'Joga Junto', value: 'player' },
+            { label: 'Espectador', value: 'spectator' },
           ]}
         />
 
-        {/* Mostrar Golpes na Revelação */}
+        {/* Limite de Jogadores (Online) */}
+        {selectedMode === 'online' && (
+          <div className="flex flex-col gap-2">
+            <Switch
+              label="Limitar Quantidade de Jogadores"
+              checked={isLimitedPlayers}
+              onChange={setIsLimitedPlayers}
+            />
+            {isLimitedPlayers && (
+              <Stepper
+                label="Máximo de Jogadores"
+                value={expectedPlayers}
+                min={2}
+                max={50}
+                onChange={setExpectedPlayers}
+              />
+            )}
+          </div>
+        )}
+
+        {/* Mostrar Quantidade de Golpes */}
         <Switch
-          label="Mostrar Golpes na Revelação"
-          description="Dramatiza danos com animações cartoon"
+          label="Mostrar Contagem de Golpes na Revelação"
           checked={showHitCount}
           onChange={setShowHitCount}
         />
 
-        {/* Teto de Cartas */}
-        <Switch
-          label="Teto Manual de Cartas"
-          description={hasManualCap ? 'Teto limitado' : 'Auto (calculado por rodada)'}
-          checked={hasManualCap}
-          onChange={setHasManualCap}
-        />
-
-        {hasManualCap && (
-          <Stepper
-            label="Máximo de Cartas por Rodada"
-            value={maxCardsCap}
-            min={2}
-            max={20}
-            onChange={setMaxCardsCap}
+        {/* Teto de Cartas Manual */}
+        <div className="flex flex-col gap-2">
+          <Switch
+            label="Definir Teto Manual de Cartas por Rodada"
+            checked={hasManualCap}
+            onChange={setHasManualCap}
           />
-        )}
+          {hasManualCap && (
+            <Stepper
+              label="Teto de Cartas"
+              value={maxCardsCap}
+              min={1}
+              max={20}
+              onChange={setMaxCardsCap}
+            />
+          )}
+        </div>
       </ToonCard>
 
-      {/* Passo 3: Cadastro de Jogadores no Lobby */}
-      <ToonCard padding="md" className="w-full flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-black font-[family-name:var(--font-heading)] text-[#111111]">
-            Jogadores ({players.length})
-          </h2>
-          <span className="text-xs font-bold text-[#666666]">Mínimo 2</span>
-        </div>
-
-        {/* Lista de Jogadores Cadastrados */}
-        <div className="flex flex-col gap-2 max-h-56 overflow-y-auto pr-1">
-          {players.map((p, index) => (
-            <div
-              key={p.id}
-              className="flex items-center justify-between p-2.5 bg-[#F9F9F9] rounded-[12px] border-2 border-[#111111] shadow-[2px_2px_0px_#111111]"
-            >
-              <div className="flex items-center gap-2.5">
-                <Avatar color={p.color} size="sm" isHost={index === 0} />
-                <div className="flex flex-col">
-                  <span className="text-sm font-bold text-[#111111] font-[family-name:var(--font-heading)]">
-                    {p.name}
-                  </span>
-                  {index === 0 && (
-                    <span className="text-[10px] font-bold text-[#FF9500]">👑 Organizador</span>
-                  )}
-                </div>
-              </div>
-
-              {index > 0 && (
-                <button
-                  type="button"
-                  onClick={() => handleRemovePlayer(p.id)}
-                  aria-label={`Remover ${p.name}`}
-                  className="w-8 h-8 rounded-full bg-white hover:bg-[#FF3038] hover:text-white border-2 border-[#111111] flex items-center justify-center font-bold text-xs cursor-pointer transition-all"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Adicionar Novo Jogador */}
-        <div className="flex flex-col gap-3 p-3 bg-[#F5F5F5] rounded-[14px] border-2 border-[#111111]">
-          <span className="text-xs font-bold text-[#111111] font-[family-name:var(--font-heading)]">
-            + Adicionar Jogador
-          </span>
-          <div className="flex gap-2">
-            <ToonInput
-              placeholder="Nome (ou vazio para sorteio)"
-              value={newPlayerName}
-              maxLength={16}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-            />
-            <ToonButton
-              type="button"
-              variant="yellow"
-              size="sm"
-              onClick={handleAddPlayer}
-              className="shrink-0"
-            >
-              + Adicionar
-            </ToonButton>
+      {/* Passo 3: Roster de Jogadores (Modo Singleplayer) */}
+      {selectedMode === 'single' ? (
+        <ToonCard padding="md" className="w-full flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-black font-[family-name:var(--font-heading)] text-[#111111]">
+              Jogadores ({players.length})
+            </h2>
+            <span className="text-[11px] text-[#666666] font-bold">Mínimo 2</span>
           </div>
 
-          <ColorPicker
-            selectedColor={newPlayerColor}
-            takenColors={players.map((p) => p.color)}
-            onSelectColor={setNewPlayerColor}
-          />
-        </div>
-      </ToonCard>
+          <div className="flex flex-col gap-2">
+            {players.map((p, idx) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between p-2.5 bg-[#F5F5F5] rounded-[12px] border-2 border-[#111111]"
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar color={p.color} size="sm" isHost={idx === 0} />
+                  <span className="font-bold text-sm text-[#111111]">{p.name}</span>
+                  {idx === 0 && (
+                    <span className="text-[10px] bg-[#FFC233] text-[#111111] border border-[#111111] px-1.5 py-0.5 rounded font-black">
+                      HOST
+                    </span>
+                  )}
+                </div>
+                {idx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePlayer(p.id)}
+                    className="text-xs font-black text-[#FF3038] hover:underline p-1 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Adicionar Jogador Local */}
+          <div className="pt-2 border-t-2 border-dashed border-[#111111] flex flex-col gap-3">
+            <span className="text-xs font-black font-[family-name:var(--font-heading)] text-[#111111]">
+              Adicionar Guerreiro
+            </span>
+            <ToonInput
+              label="Nome do Jogador"
+              placeholder="Ex: Coelho Bravo (vazio = aleatório)"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+            />
+            <div className="flex flex-col gap-1">
+              <span className="text-xs font-bold text-[#111111]">Cor do Personagem</span>
+              <ColorPicker
+                selectedColor={newPlayerColor}
+                onSelectColor={setNewPlayerColor}
+                takenColors={players.map((p) => p.color)}
+              />
+            </div>
+            <ToonButton
+              variant="secondary"
+              size="sm"
+              onClick={handleAddPlayer}
+              className="w-full mt-1"
+            >
+              + ADICIONAR JOGADOR
+            </ToonButton>
+          </div>
+        </ToonCard>
+      ) : (
+        /* Explicação do Lobby Online */
+        <ToonCard padding="md" className="w-full text-center space-y-2 bg-[#F5F5F5]">
+          <span className="text-3xl">👑</span>
+          <h3 className="font-cartoon text-lg text-black">Você será o Organizador (Host)</h3>
+          <p className="text-xs text-gray-600 font-bold">
+            Ao criar a arena online, um link e QR Code exclusivos serão gerados. Seus amigos poderão entrar instantaneamente de seus próprios celulares!
+          </p>
+        </ToonCard>
+      )}
 
       {/* Botão de Criação */}
-      <ToonButton
-        variant="primary"
-        size="lg"
-        fullWidth
-        onClick={handleCreateRoom}
-        className="text-xl shadow-[5px_5px_0px_#111111]"
-      >
-        🚀 INICIAR PARTIDA
-      </ToonButton>
-
-      <Link href="/" className="w-full">
-        <ToonButton variant="secondary" size="md" fullWidth>
-          ⬅ Voltar para o Início
+      <div className="w-full flex flex-col gap-2 pb-6">
+        <ToonButton
+          variant="primary"
+          size="lg"
+          disabled={isCreatingOnline}
+          onClick={handleCreateRoom}
+          className="w-full py-3.5 text-lg"
+        >
+          {isCreatingOnline
+            ? 'CRIANDO SALA ONLINE...'
+            : selectedMode === 'online'
+            ? 'CRIAR ARENA ONLINE! 🌐'
+            : 'INICIAR PARTIDA LOCAL! 🚀'}
         </ToonButton>
-      </Link>
+        <Link href="/" className="text-center">
+          <span className="text-xs font-bold text-[#666666] hover:underline">
+            Cancelar e voltar para o início
+          </span>
+        </Link>
+      </div>
     </div>
   );
 }

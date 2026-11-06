@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 5
-- Próxima fase: 6
+- Fase concluída: 6
+- Próxima fase: 7
 
 ## Registro por fase
 ### Fase 1
@@ -163,6 +163,43 @@
   - Nenhuma. Pronto para a Fase 6 (Lobby Online e Conexão em Tempo Real).
 
 ### Fase 6
+- Feito:
+  - Perfil Global Aprimorado (`src/app/perfil/page.tsx`):
+    - Checagem em tempo real de disponibilidade de apelido via debounce (`/api/profile/check`).
+    - Registro de perfil global via `POST /api/profile` com armazenamento do `deviceToken`.
+    - Modal de exibição única do Código de Recuperação (`XXXX-XXXX`) com botão de cópia e aviso claro.
+    - Tela de recuperação de perfil com apelido + código restaurando acesso e token no aparelho.
+    - Edição de apelido e cor via `PATCH /api/profile` mantendo garantia de unicidade (erro 409 com mensagem amigável: "Esse nome já foi pego por outro guerreiro!").
+  - Criação de Sala Online (`src/app/criar/page.tsx`):
+    - Habilitação completa do fluxo Online: nome da sala, senha opcional, vidas (fixas/aleatórias), organizador (jogador/espectador), teto de cartas e limite de jogadores.
+    - Chamada a `POST /api/rooms`, persistência de token em `localStorage` e redirecionamento automático para `/sala/[code]`.
+  - Cliente de Tempo Real e Hook `useRoom` (`src/lib/client/`):
+    - `api.ts`: Cliente HTTP tipado com tratamento de erros `ApiError`.
+    - `room-tokens.ts`: Gerenciamento seguro de tokens de sala em `localStorage` com chave por código.
+    - `supabase.ts`: Inicialização singleton do Supabase no browser utilizando exclusivamente Anon Key pública e apenas para canais Broadcast.
+    - `realtime.ts` (`useRoom`): Reconciliação robusta de estado com snapshot inicial, escuta de broadcast em `room:{code}`, descarte de versões defasadas, polling de segurança a cada 10s se silencioso, reconexão imediata em foco da janela e detecção de ausência (presença leve `SET_AWAY` após 60s em segundo plano).
+  - Tela de Entrada na Sala (`src/components/game/JoinRoomScreen.tsx`):
+    - Exibição de dados mínimos da sala (nome, quantidade de jogadores, status).
+    - Validação de senha protegida contra brute force com mensagens amigáveis.
+    - Atalho "Entrar com meu perfil" ou entrada anônima com seleção de cor livre da paleta (cores ocupadas desabilitadas).
+    - Entrada automática como Espectador caso a partida já esteja rolando.
+  - Lobby Ao Vivo e Interativo (`src/components/game/LobbyView.tsx`):
+    - Cabeçalho cartoon com nome da sala, código de 6 caracteres gigante e status ao vivo.
+    - Compartilhamento via Web Share API, botão de copiar link e modal com QR Code em alta definição (`QrCodeModal.tsx`).
+    - Grid de guerreiros com animação de entrada pop/bounce, coroa de Host, badges de status e indicador "VOCÊ".
+    - Controles de Host: expulsão de jogadores (com confirmação em modal), botão "INICIAR PARTIDA" (bloqueado com < 2 jogadores).
+    - Controles de Jogador: botão "Sair da Sala".
+  - Rota Dinâmica `/sala/[code]` (`src/app/sala/[code]/`):
+    - Suporte a transição suave de Lobby para Partida em Andamento, sincronização de rodadas e modo tela cheia.
+  - Testes:
+    - 75 testes passando (8 novos testes de Lobby, entrada com senha, QR Code e controles de host em `src/app/sala/__tests__/lobby.test.tsx`).
+  - Linters, typecheck e build de produção 100% limpos.
+- Desvios da planta:
+  - Nenhum.
+- Pendências:
+  - Nenhuma. Pronto para a Fase 7 (Partida Online Completa e Telão).
+
+### Fase 7
 
 ## Decisões tomadas pelo agente
 - 
