@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 7
-- Próxima fase: 8
+- Fase concluída: 8
+- Próxima fase: Nenhuma (Todas as 8 fases concluídas com 100% de sucesso)
 
 ## Registro por fase
 ### Fase 1
@@ -227,6 +227,47 @@
   - Nenhuma. Pronto para a Fase 8 (Polimento, Qualidade e Deploy).
 
 ### Fase 8
+- Feito:
+  - Cabeçalhos de Segurança em `next.config.ts`:
+    - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+  - Integração Contínua (CI) com GitHub Actions (`.github/workflows/ci.yml`):
+    - Workflow automatizado executando checkout, setup do Node 22, npm ci, lint, typecheck, suíte de 78 testes e build de produção com variáveis dummy seguras.
+  - Páginas de Erro e Acessibilidade Toon:
+    - Página 404 personalizada (`src/app/not-found.tsx`): layout cartoon consistente com mascot/cartas e botão de retorno.
+    - Error Boundary global (`src/app/error.tsx`): captura de exceções com animação toon, tentativa de recuperação e log de depuração.
+  - PWA e Manifest:
+    - `public/manifest.json` com ícone oficial, modo standalone e cores do design system.
+    - Service Worker e suporte a offline-first validado.
+  - Auditoria Completa do Checklist Final (`99-CHECKLIST-FINAL-E-DEPLOY.md`):
+    - [x] Fundo branco predominante; visual cartoon consistente
+    - [x] Home com Criar sala, Entrar com código, Perfil, Regras
+    - [x] Perfil: nome único global, cor, código de recuperação, recuperação funcional
+    - [x] Sem perfil: nome e cor aleatórios únicos na sala
+    - [x] /regras com hierarquia de cartas e resumo do ciclo
+    - [x] Singleplayer 100% offline após primeira visita (PWA)
+    - [x] Organizador joga junto ou como espectador
+    - [x] Vida fixa, aleatória compartilhada e individual; visível e oculta (sem vazamento no DOM)
+    - [x] Revelação com animações (pulável); mortes com banner
+    - [x] Desfazer, expulsar, ajuste ±1, revanche, retomar partida salva
+    - [x] Modo telão (`/sala/[code]/telao`) com Wake Lock e layout gigante
+    - [x] Criar sala com nome, senha opcional, jogadores (número/ilimitado), vidas, visibilidade
+    - [x] Link, código e QR; lobby ao vivo; expulsar; transferir host
+    - [x] Partida: rodada, cartas por rodada correta, dealer rotativo
+    - [x] Reporte com confirmação de todos; forçar fechamento (host)
+    - [x] Revelação idêntica em todos os aparelhos via seed determinístico
+    - [x] Consenso unânime funciona; rejeição cancela
+    - [x] Empate, vitória, revanche
+    - [x] Reconexão automática sem perder estado (reconciliação por snapshot)
+    - [x] Nenhuma resposta/broadcast vaza vida oculta, hashes ou segredos
+    - [x] `npm run lint`, `typecheck`, `test`, `build` passam com 0 erros
+    - [x] RLS ativa nas tabelas do Supabase, sem políticas públicas
+    - [x] Zero secrets no git; `.env.example` completo
+  - Documentação Final:
+    - `README.md` completo com arquitetura, instruções de execução, configuração do Supabase e guia de deploy na Vercel.
+- Desvios da planta:
+  - Nenhum. Todas as 17 correções de lógica (C1 a C17) foram implementadas e testadas.
+- Pendências:
+  - Nenhuma. Todas as 8 fases da Arena FDP estão 100% concluídas!
 
 ## Decisões tomadas pelo agente
 - 
