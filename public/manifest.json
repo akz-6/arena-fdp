@@ -1,0 +1,16 @@
+{
+  "name": "Arena FDP",
+  "short_name": "Arena FDP",
+  "description": "A partida só acaba quando sobra um.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

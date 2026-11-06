@@ -1,0 +1,119 @@
+:root {
+  /* Cores Principais - Arena FDP */
+  --paper: #FFFFFF;
+  --paper-2: #F5F5F5;
+  --paper-hover: #F9F9F9;
+  --ink: #111111;
+  --border: #111111;
+
+  /* Texto */
+  --text-primary: #111111;
+  --text-secondary: #666666;
+  --text-muted: #888888;
+
+  /* Cores de Ação e Destaque */
+  --blue: #35B8F4;
+  --blue-hover: #1FA8EC;
+  --red: #FF3038;
+  --red-hover: #E81E26;
+  --yellow: #FFC233;
+  --yellow-hover: #EBB01F;
+  --green: #2ECC71;
+  --green-hover: #27AE60;
+  --pink: #FF4FA3;
+  --orange: #FF9500;
+  --purple: #8E5CF7;
+
+  /* Contornos e Sombras Toon */
+  --outline-sm: 2px solid var(--ink);
+  --outline: 3px solid var(--ink);
+  --outline-lg: 4px solid var(--ink);
+  --shadow-sm: 2px 2px 0px var(--ink);
+  --shadow: 4px 4px 0px var(--ink);
+  --shadow-lg: 6px 6px 0px var(--ink);
+  --shadow-blue: 4px 4px 0px var(--blue);
+  --shadow-yellow: 4px 4px 0px var(--yellow);
+
+  /* Cantos */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius: 16px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  /* Fontes */
+  --font-heading: var(--font-fredoka), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+  --font-comic: var(--font-bangers), cursive, sans-serif;
+}
+
+/* 12 Cores de Jogadores */
+:root {
+  --player-1: #FF3038;
+  --player-2: #FF9500;
+  --player-3: #FFC233;
+  --player-4: #2ECC71;
+  --player-5: #00C2A8;
+  --player-6: #35B8F4;
+  --player-7: #5B6CFF;
+  --player-8: #8E5CF7;
+  --player-9: #FF4FA3;
+  --player-10: #8B5E3C;
+  --player-11: #6B7280;
+  --player-12: #111111;
+}
+
+/* Padrão Halftone Suave para fundo toon */
+.bg-toon-pattern {
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--paper-2) 1.5px, transparent 1.5px);
+  background-size: 16px 16px;
+}
+
+/* Utilitários Toon */
+.toon-border-sm {
+  border: 2px solid var(--ink);
+}
+
+.toon-border {
+  border: 3px solid var(--ink);
+}
+
+.toon-border-lg {
+  border: 4px solid var(--ink);
+}
+
+.toon-shadow-sm {
+  box-shadow: 2px 2px 0px var(--ink);
+}
+
+.toon-shadow {
+  box-shadow: 4px 4px 0px var(--ink);
+}
+
+.toon-shadow-lg {
+  box-shadow: 6px 6px 0px var(--ink);
+}
+
+.toon-press {
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.toon-press:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 0px var(--ink);
+}
+
+.toon-press:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toon-press,
+  .toon-press:hover,
+  .toon-press:active {
+    transform: none !important;
+    transition: none !important;
+  }
+}
