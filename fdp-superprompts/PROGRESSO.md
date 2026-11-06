@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 2
-- Próxima fase: 3
+- Fase concluída: 3
+- Próxima fase: 4
 
 ## Registro por fase
 ### Fase 1
@@ -46,10 +46,44 @@
 
 ### Fase 3
 - Feito:
+  - Implementação completa da biblioteca de efeitos e animações Toon Force em `src/components/fx`:
+    - Utilitários:
+      - `ScreenShake`: Contexto e hook `useShake()` com suporte a intensidade (`light`, `medium`, `heavy`) e respeito automático a `prefers-reduced-motion`.
+      - `toonAudio`: Módulo WebAudio puro sintetizando sons retrô/cartoon (`playBonk`, `playExplosion`, `playSlideDown`, `playVictory`) com persistência em localStorage e mutado por padrão.
+    - Catálogo dos 9 Golpes Cartoon (`src/components/fx/hit/`):
+      1. `GunShot`: Tiro cartoon com bandeirinha BANG!, onomatopeia e tela tremendo.
+      2. `RubberKnife`: Faca de borracha dobrando ao bater com efeito "PLIN!".
+      3. `ElasticPunch`: Braço elástico estilo borracha/Gear 5 com murro "POW!" e squash.
+      4. `Anvil`: Bigorna cartoon de 100KG caindo e achatando o avatar com "CLANG!".
+      5. `PieFace`: Torta de chantilly voando e explodindo na cara com "SPLAT!".
+      6. `BonkHammer`: Marreta de madeira "BONK!" com estrelinhas girando na cabeça.
+      7. `Dynamite`: Dinamite TNT com pavio que explode em "BOOM!" deixando o rosto chamuscado.
+      8. `FryingPan`: Frigideira de ferro com impacto metálico "PANG!".
+      9. `FallingPiano`: Piano de cauda caindo do céu com teclas voando e som de quebra.
+    - Catálogo das 6 Mortes Cartoon (`src/components/fx/death/`):
+      1. `GhostAscend`: Fantasminha translúcido com auréola e harpa subindo aos céus.
+      2. `PancakeCrumble`: Personagem achatado em panqueca que desmonta em pedaços.
+      3. `HoleFall`: Buraco cartoon abrindo no chão e personagem caindo com pop.
+      4. `SpiralSpin`: Giro em espiral hipnótico encolhendo até sumir em fumaça.
+      5. `Tombstone`: Lápide de pedra R.I.P. caindo com nuvem de poeira e florzinha.
+      6. `IrisOutDeath`: Diafragma de íris circular clássico de cinema se fechando em "FIM!".
+    - Vitória e Empate (`VictoryFx.tsx`):
+      - Coroa gigante animada, chuva de confetes SVG inline e avatar saltando em comemoração.
+      - Variante empate: "EMPATE! TODOS CAÍRAM JUNTOS!" com todos os avatares vencedores.
+    - Diretor de Efeitos (`FxDirector.tsx`):
+      - Orquestração determinística da fila de revelação sincronizada via seed (`Reveal`).
+      - Controles de "Próximo Golpe" e "Pular Tudo".
+      - Suporte a modo telão e ocultação de dano numérico em vidas ocultas.
+    - Vitrine de Efeitos (`/_dev/fx`):
+      - Rota interna de desenvolvimento listando todos os 9 golpes, 6 mortes, vitória, empate e simulação completa de fila.
+  - 48 testes unitários e de integração no Vitest cobrindo todos os efeitos, renderização, controle de timers e áudio sintetizado.
+  - Linters, typecheck e build 100% limpos.
 - Desvios da planta:
+  - Nenhum. Todos os 9 golpes e 6 mortes do catálogo foram entregues e validados.
 - Pendências:
+  - Nenhuma. Pronto para a Fase 4 (Perfil e Singleplayer Offline).
 
-(repetir até a Fase 8)
+### Fase 4
 
 ## Decisões tomadas pelo agente
 - 

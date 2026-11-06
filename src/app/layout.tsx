@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Fredoka, Nunito_Sans, Bangers } from 'next/font/google';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ScreenShakeProvider } from '@/components/fx/utils/ScreenShake';
 import { Header } from '@/components/layout/Header';
 
 const fredoka = Fredoka({
@@ -55,15 +56,17 @@ export default function RootLayout({
       className={`${fredoka.variable} ${nunito.variable} ${bangers.variable}`}
     >
       <body className="min-h-screen bg-toon-pattern text-[#111111] flex flex-col items-center">
-        <ToastProvider>
-          <div className="w-full flex flex-col min-h-screen max-w-lg sm:border-x-2 sm:border-[#111111] bg-white shadow-[0_0_24px_rgba(0,0,0,0.06)]">
-            <Header />
-            <main className="flex-1 flex flex-col p-4 sm:p-6">{children}</main>
-            <footer className="py-4 text-center text-xs text-[#888888] font-bold border-t border-[#E5E5E5] bg-[#FDFDFD]">
-              Arena FDP • v1.0.0
-            </footer>
-          </div>
-        </ToastProvider>
+        <ScreenShakeProvider>
+          <ToastProvider>
+            <div className="w-full flex flex-col min-h-screen max-w-lg sm:border-x-2 sm:border-[#111111] bg-white shadow-[0_0_24px_rgba(0,0,0,0.06)]">
+              <Header />
+              <main className="flex-1 flex flex-col p-4 sm:p-6">{children}</main>
+              <footer className="py-4 text-center text-xs text-[#888888] font-bold border-t border-[#E5E5E5] bg-[#FDFDFD]">
+                Arena FDP • v1.0.0
+              </footer>
+            </div>
+          </ToastProvider>
+        </ScreenShakeProvider>
       </body>
     </html>
   );
