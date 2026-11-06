@@ -1,8 +1,8 @@
 # PROGRESSO.md (o agente atualiza ao fim de cada fase)
 
 ## Estado atual
-- Fase concluída: 4
-- Próxima fase: 5
+- Fase concluída: 5
+- Próxima fase: 6
 
 ## Registro por fase
 ### Fase 1
@@ -121,6 +121,48 @@
   - Nenhuma. Pronto para a Fase 5 (Backend Supabase e API).
 
 ### Fase 5
+- Feito:
+  - Dependências de backend e segurança instaladas: `@supabase/supabase-js`, `jose`, `server-only`.
+  - Migração SQL do Supabase (`supabase/migrations/0001_init.sql`):
+    - Tabelas `profiles`, `rooms`, `room_secrets`.
+    - RLS ativado em todas as tabelas (sem políticas públicas, acesso exclusivo via service role).
+    - Função PL/pgSQL atômica `cas_update_room` com verificação de versão (Compare-And-Swap) e atualização coordenada de estado público e segredos.
+  - Camada de Servidor Segura (`src/lib/server/`):
+    - `hash.ts`: Criptografia com `scrypt` e salt aleatório, comparação em tempo constante via `timingSafeEqual`, geração de código de recuperação legível (`XXXX-XXXX`) e hash SHA-256 para segredos de dispositivo.
+    - `code.ts`: Gerador de códigos de sala cartoon de 6 caracteres excluindo caracteres ambíguos (`0, 1, I, O`).
+    - `auth.ts`: Assinatura e verificação de JWTs HS256 (`jose`) para tokens de sala (24h) e perfil (180 dias) com isolamento `server-only`.
+    - `rate-limit.ts`: Limitador de taxa em memória por IP e rota (best-effort serverless).
+    - `supabase.ts`: Singleton administrativo com Service Role Key (blindado contra vazamento no cliente).
+    - `broadcast.ts`: Emissão de eventos em tempo real no canal `room:{code}` sanitizado via `projectPublic` (nunca vaza vidas ocultas).
+    - `rooms-repo.ts`: Interface unificada `IRoomsRepository` com implementação em memória (`MemoryRoomsRepository`) para testes e Supabase (`SupabaseRoomsRepository`) com retry de CAS até 3x e expiração automática de 24h.
+    - `profile-repo.ts`: Interface e repositório de perfis globais com garantia de unicidade de nome case-insensitive e suporte a recuperação.
+  - Contratos e Schemas Compartilhados (`src/lib/contracts.ts`):
+    - Schemas Zod de criação/recuperação/verificação de perfil.
+    - Schemas Zod de criação de sala, entrada e discriminated union para todas as ações do jogo (`GameActionSchema`).
+    - Tipos de erro e respostas estruturadas.
+  - Route Handlers Next.js App Router (100% testados):
+    - `POST /api/profile`: Criação de perfil global com nome único e código de recuperação.
+    - `PATCH /api/profile`: Atualização de nome e cor autenticado por token de dispositivo.
+    - `POST /api/profile/recover`: Recuperação de perfil via código.
+    - `GET /api/profile/check?name=`: Verificação de disponibilidade de apelido.
+    - `POST /api/rooms`: Criação de sala pelo host com configuração, senha opcional e geração de token.
+    - `POST /api/rooms/[code]/join`: Entrada de jogador com validação de senha, rate limit contra brute force e atribuição de papel (espectador se partida em andamento).
+    - `GET /api/rooms/[code]/state`: Consulta de estado (snapshot público completo com token; resumo mínimo sem token).
+    - `POST /api/rooms/[code]/action`: Execução de ações com validação de token, autorização de ator, reduce puro, CAS com retry e broadcast.
+  - Testes:
+    - 67 testes no Vitest passando (14 novos testes de backend e segurança em `src/lib/server/__tests__/backend.test.ts`).
+    - Teste de segurança: verificação estrita de que vidas ocultas, senhas, hashes ou segredos nunca estão presentes no payload público ou broadcast.
+    - Teste de concorrência: validação do compare-and-swap evitando perdas em ações concorrentes.
+  - Documentação e Ambiente:
+    - `.env.example` criado com todas as variáveis documentadas.
+    - `README.md` atualizado com o passo a passo completo para configuração do Supabase, execução da migração e geração de segredos.
+  - Linters, typecheck e build de produção 100% limpos.
+- Desvios da planta:
+  - Nenhum.
+- Pendências:
+  - Nenhuma. Pronto para a Fase 6 (Lobby Online e Conexão em Tempo Real).
+
+### Fase 6
 
 ## Decisões tomadas pelo agente
 - 

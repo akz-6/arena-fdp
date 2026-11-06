@@ -4,7 +4,7 @@ import { z } from 'zod';
 // 1. CONFIGURAÇÃO DO JOGO
 // ==========================================
 
-export const GameConfigSchema = z.object({
+export const GameConfigBaseSchema = z.object({
   roomName: z.string().min(2).max(32).default('Arena FDP'),
   lifeVisibility: z.enum(['visible', 'hidden']).default('visible'),
   lifeMode: z.enum(['fixed', 'random']).default('fixed'),
@@ -18,7 +18,9 @@ export const GameConfigSchema = z.object({
   maxCardsCap: z.number().int().min(1).max(40).nullable().default(null),
   decks: z.union([z.number().int().min(1).max(10), z.literal('auto')]).default('auto'),
   operatorMode: z.boolean().default(false), // true em Singleplayer (organizador controla)
-}).refine((data) => data.lifeMin <= data.lifeMax, {
+});
+
+export const GameConfigSchema = GameConfigBaseSchema.refine((data) => data.lifeMin <= data.lifeMax, {
   message: 'lifeMin deve ser menor ou igual a lifeMax',
   path: ['lifeMin'],
 });
