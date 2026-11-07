@@ -452,5 +452,82 @@ describe('L1: Engine Invariants and Property-Based Testing (fast-check)', () => 
       // 40 jogadores = 2 baralhos (ceil(40/20) = 2) -> 80 cartas / 40 jogadores = teto 2
       expect(state.cardsThisRound).toBe(1);
     });
+
+    it('P1.6: Vida Oculta - Ausência total de canais laterais (clamp silencioso e projeção idêntica)', () => {
+      const rng = createRng(42);
+      const ctx = { now: 1000, rng };
+
+      // Jogador 1 tem 2 vidas, Jogador 2 tem 5 vidas (vidas ocultas diferentes)
+      let state = createInitialState({
+        host: { id: 'p1', name: 'Jogador 1', color: '#111' },
+        config: {
+          lifeVisibility: 'hidden',
+          lifeMode: 'random',
+          lifeMin: 2,
+          lifeMax: 5,
+          showHitCount: true,
+        },
+      });
+
+      state = reduce(
+        state,
+        {
+          type: 'ADD_PLAYER',
+          actorId: 'p2',
+          player: { id: 'p2', name: 'Jogador 2', color: '#222' },
+        },
+        ctx
+      ).state;
+
+      state = reduce(state, { type: 'START', actorId: 'p1' }, ctx).state;
+
+      // Força vidas diferentes internamente no estado completo após START
+      state.players[0]!.life = 2;
+      state.players[1]!.life = 5;
+
+      state = reduce(state, { type: 'END_ROUND', actorId: 'p1' }, ctx).state;
+      expect(state.phase).toBe('reporting');
+
+      // Ambos enviam dano exagerado (10) - muito maior que a vida de ambos
+      // O servidor DEVE aceitar ambos sem lançar erro (zero canal lateral de validação)
+      expect(() => {
+        state = reduce(
+          state,
+          { type: 'SET_DAMAGE', actorId: 'p1', targetId: 'p1', damage: 10 },
+          ctx
+        ).state;
+      }).not.toThrow();
+
+      expect(() => {
+        state = reduce(
+          state,
+          { type: 'SET_DAMAGE', actorId: 'p2', targetId: 'p2', damage: 10 },
+          ctx
+        ).state;
+      }).not.toThrow();
+
+      // Confirmação
+      state = reduce(state, { type: 'CONFIRM', actorId: 'p1' }, ctx).state;
+      state = reduce(state, { type: 'CONFIRM', actorId: 'p2' }, ctx).state;
+
+      // Ambos morreram nesta rodada
+      expect(state.phase).toBe('finished');
+
+      // Projeção pública em finished inclui vidas para o resumo final (P2.3)
+      const finishedPublic = projectPublic(state);
+      expect(finishedPublic.players[0]?.life).toBe(0);
+      expect(finishedPublic.players[1]?.life).toBe(0);
+
+      // E o dano mostrado na revelação é o dano REPORTADO (10), não o dano clampado
+      expect(state.lastReveal?.hits[0]?.damage).toBe(10);
+      expect(state.lastReveal?.hits[1]?.damage).toBe(10);
+      expect(state.lastReveal?.hits[0]?.appliedDamage).toBe(2);
+      expect(state.lastReveal?.hits[1]?.appliedDamage).toBe(5);
+
+      // JSON público nunca contém prevSnapshot nem appliedDamage
+      const publicJson = JSON.stringify(finishedPublic);
+      expect(publicJson).not.toContain('prevSnapshot');
+      expect(publicJson).not.toContain('appliedDamage');
+    });
   });
 });

@@ -257,7 +257,7 @@ describe('Partida Online Multi-Client e Sincronização (Fase 7)', () => {
     );
 
     // Fecha a rodada gerando o snapshot anterior
-    await actionPost(
+    const forceRes = await actionPost(
       new NextRequest(`http://localhost/api/rooms/${code}/action`, {
         method: 'POST',
         headers: { authorization: `Bearer ${hToken}` },
@@ -265,6 +265,9 @@ describe('Partida Online Multi-Client e Sincronização (Fase 7)', () => {
       }),
       { params: Promise.resolve({ code }) }
     );
+    const forceData = await forceRes.json();
+    expect(forceData.room.canUndo).toBe(true);
+    expect(forceData.room.prevSnapshot).toBeUndefined();
 
     // Host desfaz a rodada (UNDO_LAST_ROUND)
     const undoRes = await actionPost(
@@ -279,6 +282,7 @@ describe('Partida Online Multi-Client e Sincronização (Fase 7)', () => {
     const undoData = await undoRes.json();
     expect(undoData.room.roundNumber).toBe(1);
     expect(undoData.room.phase).toBe('reporting');
+    expect(undoData.room.canUndo).toBe(false);
   });
 });
 

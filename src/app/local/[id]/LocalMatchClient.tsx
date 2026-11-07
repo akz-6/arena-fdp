@@ -115,22 +115,33 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
           onSelectPlayer={setSelectedPlayerId}
         />
 
-        <div className="w-full flex flex-col gap-3">
-          <ToonButton
-            variant="primary"
-            size="lg"
-            fullWidth
-            onClick={() => dispatch({ type: 'START', actorId: state.hostId })}
-            className="text-xl shadow-[5px_5px_0px_#111111]"
-          >
-            ▶ COMEÇAR PARTIDA
-          </ToonButton>
-          <Link href="/local" className="w-full">
-            <ToonButton variant="secondary" fullWidth>
-              ⬅ Sair para Lista
-            </ToonButton>
-          </Link>
-        </div>
+        {(() => {
+          const activePlayers = state.players.filter(
+            (p) => p.role === 'player' && p.status !== 'kicked'
+          );
+          const canStart = activePlayers.length >= 2;
+          const missing = Math.max(0, 2 - activePlayers.length);
+
+          return (
+            <div className="w-full flex flex-col gap-3">
+              <ToonButton
+                variant="primary"
+                size="lg"
+                fullWidth
+                disabled={!canStart}
+                onClick={() => dispatch({ type: 'START', actorId: state.hostId })}
+                className="text-xl shadow-[5px_5px_0px_#111111]"
+              >
+                {canStart ? '▶ COMEÇAR PARTIDA' : `Faltam ${missing} jogador(es) ativos`}
+              </ToonButton>
+              <Link href="/local" className="w-full">
+                <ToonButton variant="secondary" fullWidth>
+                  ⬅ Sair para Lista
+                </ToonButton>
+              </Link>
+            </div>
+          );
+        })()}
       </div>
     );
   }

@@ -7,7 +7,7 @@ import { LobbyView } from '@/components/game/LobbyView';
 import { JoinRoomScreen } from '@/components/game/JoinRoomScreen';
 import { RoundHeader } from '@/components/game/RoundHeader';
 import { PlayerGrid } from '@/components/game/PlayerGrid';
-import { ReportPanel } from '@/components/game/ReportPanel';
+import { OnlineReportPanel } from '@/components/game/OnlineReportPanel';
 import { ProposalBar } from '@/components/game/ProposalBar';
 import { FxDirector } from '@/components/fx/FxDirector';
 import { VictoryFx } from '@/components/fx/VictoryFx';
@@ -185,14 +185,13 @@ export default function RoomClient({ code }: RoomClientProps) {
     setPendingDamage((prev) => ({ ...prev, [targetId]: damage }));
   };
 
-  const handleConfirmReport = async () => {
+  const handleConfirmReport = async (damage: number) => {
     try {
-      const dmg = pendingDamage[me.id] ?? 0;
       await sendAction({
         type: 'SET_DAMAGE',
         actorId: me.id,
         targetId: me.id,
-        damage: dmg,
+        damage,
       });
       await sendAction({
         type: 'CONFIRM',
@@ -200,7 +199,20 @@ export default function RoomClient({ code }: RoomClientProps) {
       });
       showToast('Dano confirmado!', 'success');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Erro ao confirmar';
+      const msg = err instanceof Error ? err.message : 'Erro ao confirmar dano';
+      showToast(msg, 'error');
+    }
+  };
+
+  const handleForceClose = async () => {
+    try {
+      await sendAction({
+        type: 'FORCE_CLOSE',
+        actorId: me.id,
+      });
+      showToast('Rodada encerrada pelo Host!', 'info');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao forçar fechamento';
       showToast(msg, 'error');
     }
   };
@@ -342,13 +354,14 @@ export default function RoomClient({ code }: RoomClientProps) {
         </ToonCard>
       )}
 
-      {/* Fase 2: Reporte de Danos */}
+      {/* Fase 2: Reporte de Danos Online Individual */}
       {room.phase === 'reporting' && (
-        <ReportPanel
-          players={room.players}
-          pendingDamage={pendingDamage}
-          onSetDamage={handleSetDamage}
-          onSubmitReport={handleConfirmReport}
+        <OnlineReportPanel
+          room={room}
+          me={me}
+          isHost={isHostControl}
+          onConfirmDamage={handleConfirmReport}
+          onForceClose={handleForceClose}
         />
       )}
 
@@ -403,7 +416,7 @@ export default function RoomClient({ code }: RoomClientProps) {
       {/* Propostas e Ajustes do Host */}
       <ProposalBar
         selectedPlayer={selectedPlayer}
-        canUndo={Boolean(room.prevSnapshot)}
+        canUndo={Boolean(room.canUndo || room.prevSnapshot)}
         activeProposal={room.proposals.find((p) => p.status === 'pending')}
         currentUserId={me.id}
         players={room.players}

@@ -114,21 +114,23 @@ describe('Singleplayer: Persistência e Resiliência do Armazenamento', () => {
       const players = Array.from({ length: count }, (_, i) => ({
         id: `p${i + 1}`,
         name: `Jogador ${i + 1}`,
-        color: palette[i % palette.length],
+        color: palette[i % palette.length]!,
       }));
 
       const ctx = { now: Date.now(), rng: () => 0.5 };
       let state = createInitialState({
-        host: players[0],
+        host: players[0]!,
         config: { roomName: 'Arena Local', lifeVisibility: 'visible', lifeMode: 'fixed', lifeFixed: 5, operatorMode: true },
       });
 
       for (let i = 1; i < count; i++) {
+        const p = players[i]!;
         state = reduce(
           state,
           {
             type: 'ADD_PLAYER',
-            player: { id: players[i].id, name: players[i].name, color: players[i].color, role: 'player' },
+            actorId: p.id,
+            player: { id: p.id, name: p.name, color: p.color, role: 'player' },
           },
           ctx
         ).state;
@@ -146,15 +148,16 @@ describe('Singleplayer: Persistência e Resiliência do Armazenamento', () => {
 
       const actions: GameAction[] = [];
       for (let i = 0; i < alive.length; i++) {
+        const p = alive[i]!;
         actions.push({
           type: 'SET_DAMAGE',
           actorId: state.hostId,
-          targetId: alive[i].id,
+          targetId: p.id,
           damage: i + 1,
         });
         actions.push({
           type: 'CONFIRM',
-          actorId: alive[i].id,
+          actorId: p.id,
         });
       }
 
@@ -168,7 +171,8 @@ describe('Singleplayer: Persistência e Resiliência do Armazenamento', () => {
 
       // Confirma que cada jogador teve o dano exato subtraído de sua vida
       for (let i = 0; i < alive.length; i++) {
-        const pAfter = state.players.find((p) => p.id === alive[i].id);
+        const p = alive[i]!;
+        const pAfter = state.players.find((item) => item.id === p.id);
         expect(pAfter?.life).toBe(5 - (i + 1));
       }
     }

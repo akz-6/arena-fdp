@@ -56,6 +56,7 @@ export type Player = z.infer<typeof PlayerSchema>;
 export interface RevealHit {
   playerId: string;
   damage: number | null; // null em hidden quando showHitCount = false
+  appliedDamage?: number; // Dano interno efetivamente subtraído da vida (omitido na projeção pública)
   died: boolean;
 }
 
@@ -102,6 +103,7 @@ export interface GameState {
   winners: string[] | null; // 1 vencedor ou lista (empate)
   seed: number;
   prevSnapshot?: Omit<GameState, 'prevSnapshot'> | null; // Para desfazer última rodada
+  canUndo?: boolean; // Flag booleana exposta ao cliente indicando se há rodada para desfazer
 }
 
 // ==========================================

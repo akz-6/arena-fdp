@@ -848,6 +848,7 @@ function closeRound(
 
     hits.push({
       playerId: p.id,
+      appliedDamage: Math.min(currentLife, damage),
       damage,
       died,
     });

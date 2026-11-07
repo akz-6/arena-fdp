@@ -55,6 +55,22 @@ export default function CreateRoomPage() {
   const [expectedPlayers, setExpectedPlayers] = useState(4);
   const [isCreatingOnline, setIsCreatingOnline] = useState(false);
 
+  const handleHostRoleChange = (role: 'player' | 'spectator') => {
+    setHostRole(role);
+    if (role === 'spectator' && players.length < 3) {
+      // Garante automaticamente pelo menos 2 jogadores ativos além do host espectador
+      const occupiedNames = players.map((p) => p.name);
+      const occupiedColors = players.map((p) => p.color);
+      const rng = createRng(Date.now());
+      const name = generateRandomName(occupiedNames, rng);
+      const color = pickAvailableColor(occupiedColors, rng);
+      setPlayers((prev) => [
+        ...prev,
+        { id: `p-${Date.now().toString(36)}`, name, color },
+      ]);
+    }
+  };
+
   // Cadastro de Jogadores do Lobby Local (Modo Singleplayer)
   const [players, setPlayers] = useState<LobbyPlayer[]>(() => {
     const hostName = profile?.name || 'Organizador';
@@ -159,8 +175,12 @@ export default function CreateRoomPage() {
     }
 
     // MODO SINGLEPLAYER (Local)
-    if (players.length < 2) {
-      showToast('Adicione pelo menos 2 jogadores para iniciar!', 'error');
+    const activePlayerCount = hostRole === 'spectator' ? players.length - 1 : players.length;
+    if (activePlayerCount < 2) {
+      showToast(
+        `O modo Singleplayer exige pelo menos 2 jogadores ativos (o Organizador Espectador não joga). Faltam ${2 - activePlayerCount} jogador(es)!`,
+        'error'
+      );
       return;
     }
 
@@ -336,7 +356,7 @@ export default function CreateRoomPage() {
         <Segmented
           label="Organizador"
           value={hostRole}
-          onChange={setHostRole}
+          onChange={handleHostRoleChange}
           options={[
             { label: 'Joga Junto', value: 'player' },
             { label: 'Espectador', value: 'spectator' },
@@ -472,7 +492,7 @@ export default function CreateRoomPage() {
         <ToonButton
           variant="primary"
           size="lg"
-          disabled={isCreatingOnline}
+          disabled={isCreatingOnline || (selectedMode === 'single' && (hostRole === 'spectator' ? players.length - 1 : players.length) < 2)}
           onClick={handleCreateRoom}
           className="w-full py-3.5 text-lg"
         >
@@ -480,6 +500,8 @@ export default function CreateRoomPage() {
             ? 'CRIANDO SALA ONLINE...'
             : selectedMode === 'online'
             ? 'CRIAR ARENA ONLINE! 🌐'
+            : (hostRole === 'spectator' ? players.length - 1 : players.length) < 2
+            ? `Faltam ${2 - (hostRole === 'spectator' ? players.length - 1 : players.length)} jogador(es) ativos`
             : 'INICIAR PARTIDA LOCAL! 🚀'}
         </ToonButton>
         <Link href="/" className="text-center">

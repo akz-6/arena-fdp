@@ -8,7 +8,9 @@ export type PublicGameState = Omit<GameState, 'prevSnapshot'>;
  * NUNCA vazem para o cliente.
  */
 export function projectPublic(state: GameState): PublicGameState {
-  const isHidden = state.config.lifeVisibility === 'hidden';
+  // Em modo oculto, a vida só é revelada se a partida estiver completamente encerrada (phase === 'finished')
+  // para compor a tabela de resumo final (C12 da planta). Em qualquer outra fase, a vida é rigorosamente omitida.
+  const isHidden = state.config.lifeVisibility === 'hidden' && state.phase !== 'finished';
 
   // 1. Projeção dos jogadores (remove campo life se hidden)
   const projectedPlayers = state.players.map((player) => {
@@ -38,14 +40,16 @@ export function projectPublic(state: GameState): PublicGameState {
   const projectedPendingDamage =
     state.phase === 'reporting' ? {} : { ...state.pendingDamage };
 
-  // 4. Retorna estado público seguro, sem prevSnapshot
+  // 4. Retorna estado público seguro, sem prevSnapshot mas com a flag booleana canUndo
   const safeState = { ...state };
   delete (safeState as { prevSnapshot?: unknown }).prevSnapshot;
+  safeState.canUndo = Boolean(state.prevSnapshot);
 
   return {
     ...safeState,
     players: projectedPlayers,
     lastReveal: projectedReveal,
     pendingDamage: projectedPendingDamage,
+    canUndo: Boolean(state.prevSnapshot),
   };
 }
