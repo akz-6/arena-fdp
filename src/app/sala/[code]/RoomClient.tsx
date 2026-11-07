@@ -16,6 +16,7 @@ import { ToonCard } from '@/components/ui/ToonCard';
 import { ToonButton } from '@/components/ui/ToonButton';
 import { Badge } from '@/components/ui/Badge';
 import { useToast } from '@/components/ui/Toast';
+import { announce } from '@/lib/client/announcer';
 
 interface RoomClientProps {
   code: string;
@@ -69,6 +70,38 @@ export default function RoomClient({ code }: RoomClientProps) {
       setIsFullscreen(false);
     }
   };
+
+  // Anúncios para leitores de tela em eventos de jogo
+  useEffect(() => {
+    if (room && room.phase === 'finished') {
+      if (room.winners && room.winners.length === 1) {
+        const winner = room.players.find((p) => p.id === room.winners?.[0]);
+        announce(`${winner?.name || 'Um jogador'} venceu a partida!`);
+      } else if (room.winners && room.winners.length > 1) {
+        announce('A partida terminou em empate!');
+      }
+    }
+  }, [room?.phase, room?.winners, room?.players]);
+
+  useEffect(() => {
+    if (room?.proposals) {
+      const pending = room.proposals.find((p) => p.status === 'pending');
+      if (pending) {
+        const target = room.players.find((p) => p.id === pending.targetId);
+        const direction = pending.delta > 0 ? '+1 de vida' : '-1 de vida';
+        announce(
+          `Host propôs ajuste de ${direction} para ${target?.name || 'um jogador'}.`
+        );
+      }
+    }
+  }, [room?.proposals, room?.players]);
+
+  useEffect(() => {
+    if (room && room.phase === 'reporting') {
+      const aliveCount = room.players.filter((p) => p.role === 'player' && p.status === 'alive').length;
+      announce(`${room.confirmed.length} de ${aliveCount} jogadores confirmaram dano.`);
+    }
+  }, [room?.confirmed?.length, room?.phase, room?.players]);
 
   // Carregamento inicial
   if (loading) {

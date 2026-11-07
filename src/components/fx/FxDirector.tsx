@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Reveal, Player } from '@/lib/engine/types';
 import { createRng } from '@/lib/engine/rng';
+import { useReducedMotion } from '@/lib/client/use-reduced-motion';
+import { announce } from '@/lib/client/announcer';
 import { HIT_EFFECTS } from './hit';
 import { DEATH_EFFECTS } from './death';
 
@@ -32,6 +34,8 @@ export const FxDirector: React.FC<FxDirectorProps> = ({
   isTelao = false,
   onFinish,
 }) => {
+  const { reducedMotion } = useReducedMotion();
+
   // Constrói a fila determinística de animações a partir da seed da revelação
   const queue: FxQueueItem[] = useMemo(() => {
     if (!reveal || !reveal.hits || reveal.hits.length === 0) {
@@ -92,6 +96,7 @@ export const FxDirector: React.FC<FxDirectorProps> = ({
   // Se a fila estiver vazia (ninguém tomou dano na rodada)
   useEffect(() => {
     if (queue.length === 0) {
+      announce('Rodada Pacífica! Ninguém tomou dano nesta rodada.');
       const timer = setTimeout(() => {
         onFinish();
       }, 1500);
@@ -99,10 +104,36 @@ export const FxDirector: React.FC<FxDirectorProps> = ({
     }
   }, [queue.length, onFinish]);
 
+  // Anúncio para leitor de tela do item atual
+  useEffect(() => {
+    if (queue.length > 0 && queue[currentIndex]) {
+      const item = queue[currentIndex];
+      if (item.type === 'death') {
+        announce(`${item.playerName} foi eliminado da partida!`);
+      } else {
+        announce(
+          item.damage !== null && item.damage !== undefined
+            ? `${item.playerName} tomou ${item.damage} de dano.`
+            : `${item.playerName} foi atingido!`
+        );
+      }
+    }
+  }, [currentIndex, queue]);
+
+  // Auto-avanço com movimento reduzido para não travar a partida
+  useEffect(() => {
+    if (reducedMotion && queue.length > 0 && queue[currentIndex]) {
+      const timer = setTimeout(() => {
+        handleNext();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [reducedMotion, currentIndex, queue, handleNext]);
+
   if (queue.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-8 text-center gap-3">
-        <span className="text-4xl">🛡️</span>
+        <span className="text-4xl" aria-hidden="true">🛡️</span>
         <h3 className="text-2xl font-black font-[family-name:var(--font-heading)] text-[#111111]">
           Rodada Pacífica!
         </h3>
@@ -120,6 +151,40 @@ export const FxDirector: React.FC<FxDirectorProps> = ({
 
   // Renderiza o componente de golpe ou morte correspondente
   const renderCurrentEffect = () => {
+    if (reducedMotion) {
+      return (
+        <div
+          role="region"
+          aria-label="Resumo do efeito"
+          className="w-full max-w-sm flex flex-col items-center justify-center p-6 bg-white border-2 border-[#111111] rounded-[16px] shadow-[4px_4px_0px_#111111] text-center gap-3 animate-none"
+        >
+          <span className="text-5xl" aria-hidden="true">
+            {currentItem.type === 'death' ? '💀' : '💥'}
+          </span>
+          <h4
+            className="text-xl font-black font-[family-name:var(--font-heading)]"
+            style={{ color: currentItem.playerColor }}
+          >
+            {currentItem.playerName}
+          </h4>
+          <p className="text-base font-bold text-[#111111]">
+            {currentItem.type === 'death'
+              ? 'Foi eliminado da partida!'
+              : currentItem.damage !== null && currentItem.damage !== undefined
+              ? `Tomou ${currentItem.damage} de dano!`
+              : 'Atingido!'}
+          </p>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="mt-2 px-4 py-2 bg-[#FFC233] text-[#111111] font-black rounded-[10px] border-2 border-[#111111] shadow-[2px_2px_0px_#111111] hover:bg-[#FFB81C] cursor-pointer"
+          >
+            Próximo ⏭
+          </button>
+        </div>
+      );
+    }
+
     if (currentItem.type === 'hit') {
       const effectDef = HIT_EFFECTS[currentItem.effectIndex % HIT_EFFECTS.length];
       if (!effectDef) return null;

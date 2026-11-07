@@ -90,7 +90,7 @@ export default function HomePage() {
         {/* Textos do Hero */}
         <div className="flex flex-col gap-1.5 px-2 mt-1">
           <h1 className="text-3xl sm:text-4xl font-black font-[family-name:var(--font-heading)] text-[#111111] tracking-tight">
-            ARENA <span className="text-[#35B8F4]">FDP</span>
+            ARENA <span className="text-[#0284C7]">FDP</span>
           </h1>
 
           <p className="text-base sm:text-lg font-bold text-[#111111] font-[family-name:var(--font-heading)]">

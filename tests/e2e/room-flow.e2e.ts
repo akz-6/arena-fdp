@@ -7,12 +7,13 @@ test.describe('L3: Multi-player Realtime Game Flow (E2E)', () => {
     const hostPage = await context.newPage();
     const guestPage = await context.newPage();
 
-    // 1. Host acessa página de criação
+    // 1. Host acessa página de criação e seleciona Online
     await hostPage.goto('/criar');
-    await hostPage.fill('input[placeholder*="Arena"], input[name="roomName"]', 'Arena E2E Test');
+    await hostPage.getByRole('button', { name: /🌐 Online/i }).click();
+    await hostPage.fill('input[name="roomName"]', 'Arena E2E Test');
 
-    // Clica no botão de criar sala
-    const createBtn = hostPage.getByRole('button', { name: /criar sala/i });
+    // Clica no botão de criar sala online
+    const createBtn = hostPage.getByRole('button', { name: /CRIAR ARENA ONLINE/i });
     await createBtn.click();
 
     // Aguarda redirecionamento para /sala/[code]
@@ -22,8 +23,8 @@ test.describe('L3: Multi-player Realtime Game Flow (E2E)', () => {
     expect(codeMatch).not.toBeNull();
     const code = (codeMatch ? codeMatch[1] : '') as string;
 
-    // Verifica que o host está no lobby
-    await expect(hostPage.getByText(/lobby/i).first()).toBeVisible();
+    // Verifica que o host está no lobby (tela de espera com código da sala)
+    await expect(hostPage.getByText(/código da sala/i).first()).toBeVisible();
 
     // 2. Convidado entra na sala usando código em minúsculas
     await guestPage.goto('/');

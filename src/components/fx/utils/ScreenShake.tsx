@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useReducedMotion, useMotionStore } from '@/lib/client/use-reduced-motion';
 
 interface ScreenShakeContextValue {
   shake: (intensity?: 'light' | 'medium' | 'heavy') => void;
@@ -28,23 +29,14 @@ export const ScreenShakeProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [isShaking, setIsShaking] = useState(false);
   const [intensityLevel, setIntensityLevel] = useState<'light' | 'medium' | 'heavy'>('medium');
-  const [isEnabled, setIsEnabled] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    }
-    return true;
-  });
+  const { reducedMotion } = useReducedMotion();
 
-  // Escuta alterações dinâmicas de prefers-reduced-motion
+  // Inicializa o listener de preferências
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      setIsEnabled(!e.matches);
-    };
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    useMotionStore.getState().init();
   }, []);
+
+  const isEnabled = !reducedMotion;
 
   const shake = useCallback(
     (intensity: 'light' | 'medium' | 'heavy' = 'medium') => {
@@ -69,9 +61,21 @@ export const ScreenShakeProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   return (
-    <ScreenShakeContext.Provider value={{ shake, isEnabled, setIsEnabled }}>
+    <ScreenShakeContext.Provider
+      value={{
+        shake,
+        isEnabled,
+        setIsEnabled: (enabled: boolean) => {
+          useMotionStore.getState().setReducedMotion(!enabled);
+        },
+      }}
+    >
       <motion.div
-        animate={isShaking ? { x: getShakeOffsets(), y: getShakeOffsets().map((v) => v * 0.5) } : { x: 0, y: 0 }}
+        animate={
+          isShaking && isEnabled
+            ? { x: getShakeOffsets(), y: getShakeOffsets().map((v) => v * 0.5) }
+            : { x: 0, y: 0 }
+        }
         transition={{ duration: 0.3 }}
         className="w-full h-full min-h-screen"
       >

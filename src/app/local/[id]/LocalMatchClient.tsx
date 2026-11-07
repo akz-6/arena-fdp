@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useLocalGamesStore } from '@/lib/client/local-game-store';
 import { reduce } from '@/lib/engine/reducer';
@@ -9,6 +9,7 @@ import { GameAction } from '@/lib/engine/types';
 import { RoundHeader, PlayerGrid, ReportPanel, ProposalBar, MatchSummaryTable } from '@/components/game';
 import { FxDirector, VictoryFx } from '@/components/fx';
 import { ToonButton, ToonCard, useToast } from '@/components/ui';
+import { announce } from '@/lib/client/announcer';
 
 export default function LocalMatchClient({ matchId }: { matchId: string }) {
   const { matches, saveMatch } = useLocalGamesStore();
@@ -45,6 +46,34 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
       setIsTelao(false);
     }
   }, [isTelao, showToast]);
+
+  // Anúncios para leitores de tela em modo local
+  useEffect(() => {
+    if (savedMatch?.state) {
+      const state = savedMatch.state;
+      if (state.phase === 'finished') {
+        if (state.winners && state.winners.length === 1) {
+          const winner = state.players.find((p) => p.id === state.winners?.[0]);
+          announce(`${winner?.name || 'Um jogador'} venceu a partida!`);
+        } else if (state.winners && state.winners.length > 1) {
+          announce('A partida terminou em empate!');
+        }
+      }
+    }
+  }, [savedMatch?.state?.phase, savedMatch?.state?.winners]);
+
+  useEffect(() => {
+    if (savedMatch?.state?.proposals) {
+      const pending = savedMatch.state.proposals.find((p) => p.status === 'pending');
+      if (pending) {
+        const target = savedMatch.state.players.find((p) => p.id === pending.targetId);
+        const direction = pending.delta > 0 ? '+1 de vida' : '-1 de vida';
+        announce(
+          `Host propôs ajuste de ${direction} para ${target?.name || 'um jogador'}.`
+        );
+      }
+    }
+  }, [savedMatch?.state?.proposals]);
 
   if (!savedMatch) {
     return (

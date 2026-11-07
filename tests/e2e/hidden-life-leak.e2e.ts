@@ -61,7 +61,7 @@ test.describe('L3 / R10: Zero Hidden Life Leak (DOM, ARIA, Storage, Network, Web
     // Injetar token no localStorage antes de carregar a página
     await page.addInitScript(
       ({ roomCode, token }) => {
-        localStorage.setItem(`fdp_token_${roomCode}`, token);
+        localStorage.setItem(`arena_fdp_room_token_${roomCode.toUpperCase()}`, token);
       },
       { roomCode: code, token: playerBToken }
     );

@@ -12,12 +12,12 @@ test.describe('L4: Network Resilience & Snapshot Reconciliation (E2E)', () => {
         hostProfile: { name: 'HostResilient' },
       },
     });
-    const { code, token, playerId } = await createRes.json();
+    const { code, token } = await createRes.json();
 
     // 2. Injetar token e acessar sala
     await page.addInitScript(
       ({ roomCode, userToken }) => {
-        localStorage.setItem(`fdp_token_${roomCode}`, userToken);
+        localStorage.setItem(`arena_fdp_room_token_${roomCode.toUpperCase()}`, userToken);
       },
       { roomCode: code, userToken: token }
     );
@@ -50,7 +50,7 @@ test.describe('L4: Network Resilience & Snapshot Reconciliation (E2E)', () => {
 
     await page.addInitScript(
       ({ roomCode, userToken }) => {
-        localStorage.setItem(`fdp_token_${roomCode}`, userToken);
+        localStorage.setItem(`arena_fdp_room_token_${roomCode.toUpperCase()}`, userToken);
       },
       { roomCode: code, userToken: token }
     );

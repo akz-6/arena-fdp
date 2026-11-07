@@ -67,5 +67,8 @@ export default defineConfig({
         url: `http://localhost:${PORT}`,
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
+        env: {
+          FDP_ALLOW_MEMORY_REPO: '1',
+        },
       },
 });

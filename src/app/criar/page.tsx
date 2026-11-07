@@ -271,13 +271,13 @@ export default function CreateRoomPage() {
             onClick={() => setSelectedMode('online')}
             className={`p-3 rounded-[12px] border-2 border-[#111111] font-bold font-[family-name:var(--font-heading)] flex flex-col items-center text-center gap-1 transition-all cursor-pointer ${
               selectedMode === 'online'
-                ? 'bg-[#35B8F4] text-white shadow-[3px_3px_0px_#111111] scale-[1.02]'
+                ? 'bg-[#0369A1] text-white shadow-[3px_3px_0px_#111111] scale-[1.02]'
                 : 'bg-white hover:bg-[#F5F5F5] text-[#111111]'
             }`}
           >
             <span className="text-2xl">🌐</span>
             <span className="text-sm">Online</span>
-            <span className={`text-[10px] ${selectedMode === 'online' ? 'text-white/90' : 'text-[#666666]'}`}>
+            <span className={`text-[10px] ${selectedMode === 'online' ? 'text-white' : 'text-[#666666]'}`}>
               Multiplayer com link e QR
             </span>
           </button>
@@ -306,6 +306,8 @@ export default function CreateRoomPage() {
 
         <ToonInput
           label="Nome da Sala"
+          name="roomName"
+          placeholder="Nome da sua arena"
           value={roomName}
           onChange={(e) => setRoomName(e.target.value)}
         />

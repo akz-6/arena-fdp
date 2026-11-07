@@ -28,10 +28,15 @@ export default function RulesPage() {
           <h2 className="text-lg font-black font-[family-name:var(--font-heading)] text-[#111111]">
             🃏 Força das Cartas
           </h2>
-          <span className="text-[11px] font-bold text-[#FF3038]">Do Zap aos Quatros</span>
+          <span className="text-[11px] font-bold text-[#DC2626]">Do Zap aos Quatros</span>
         </div>
 
-        <div className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Lista de hierarquia das cartas"
+          className="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1 focus:outline-none focus:ring-2 focus:ring-[#0284C7]"
+        >
           {reversedTiers.map((tier) => {
             const isSelected = selectedTier === tier.position;
             const isZap = tier.position === 13;
@@ -60,7 +65,7 @@ export default function RulesPage() {
                   </div>
 
                   {tier.nickname && (
-                    <span className="bg-[#FF3038] text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-[#111111]">
+                    <span className="bg-[#DC2626] text-white text-[10px] font-black px-2 py-0.5 rounded-full border border-[#111111]">
                       🔥 {tier.nickname}
                     </span>
                   )}
@@ -71,7 +76,7 @@ export default function RulesPage() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-[#666666]">
+                <div className={`flex items-center justify-between text-xs ${isSelected ? 'text-[#111111]' : 'text-[#666666]'}`}>
                   <span className="font-semibold">{tier.cards.join(' • ')}</span>
                   {isSelected && (
                     <span className="text-[11px] text-[#111111] font-bold">
