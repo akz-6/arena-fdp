@@ -5,8 +5,8 @@ import { PlayerGrid } from '@/components/game/PlayerGrid';
 import { ReportPanel } from '@/components/game/ReportPanel';
 import { useLocalGamesStore } from '@/lib/client/local-game-store';
 import { useProfileStore } from '@/lib/client/profile-store';
-import { createInitialState } from '@/lib/engine/reducer';
-import { Player } from '@/lib/engine/types';
+import { createInitialState, reduce } from '@/lib/engine/reducer';
+import { Player, GameAction } from '@/lib/engine/types';
 
 describe('Singleplayer: PlayerGrid e Proteção de Vida Oculta', () => {
   const mockPlayers: Player[] = [
@@ -106,5 +106,71 @@ describe('Singleplayer: Persistência e Resiliência do Armazenamento', () => {
 
     clearProfile();
     expect(useProfileStore.getState().profile).toBeNull();
+  });
+
+  it('P1.2: partida local com 2, 3 e 5 jogadores fecha rodada e transita para reveal com danos aplicados', () => {
+    const palette = ['#FF3038', '#35B8F4', '#FFC233', '#2ECC71', '#9B51E0'];
+    for (const count of [2, 3, 5]) {
+      const players = Array.from({ length: count }, (_, i) => ({
+        id: `p${i + 1}`,
+        name: `Jogador ${i + 1}`,
+        color: palette[i % palette.length],
+      }));
+
+      const ctx = { now: Date.now(), rng: () => 0.5 };
+      let state = createInitialState({
+        host: players[0],
+        config: { roomName: 'Arena Local', lifeVisibility: 'visible', lifeMode: 'fixed', lifeFixed: 5, operatorMode: true },
+      });
+
+      for (let i = 1; i < count; i++) {
+        state = reduce(
+          state,
+          {
+            type: 'ADD_PLAYER',
+            player: { id: players[i].id, name: players[i].name, color: players[i].color, role: 'player' },
+          },
+          ctx
+        ).state;
+      }
+
+      state = reduce(state, { type: 'START', actorId: 'p1' }, ctx).state;
+      expect(state.phase).toBe('round');
+
+      state = reduce(state, { type: 'END_ROUND', actorId: 'p1' }, ctx).state;
+      expect(state.phase).toBe('reporting');
+
+      // Aplica ações encadeadas de dano e confirmação
+      const alive = state.players.filter((p) => p.status === 'alive' && p.role === 'player');
+      expect(alive.length).toBe(count);
+
+      const actions: GameAction[] = [];
+      for (let i = 0; i < alive.length; i++) {
+        actions.push({
+          type: 'SET_DAMAGE',
+          actorId: state.hostId,
+          targetId: alive[i].id,
+          damage: i + 1,
+        });
+        actions.push({
+          type: 'CONFIRM',
+          actorId: alive[i].id,
+        });
+      }
+
+      for (const a of actions) {
+        state = reduce(state, a, ctx).state;
+      }
+
+      expect(state.phase).toBe('reveal');
+      expect(state.lastReveal).toBeDefined();
+      expect(state.lastReveal?.hits.length).toBe(count);
+
+      // Confirma que cada jogador teve o dano exato subtraído de sua vida
+      for (let i = 0; i < alive.length; i++) {
+        const pAfter = state.players.find((p) => p.id === alive[i].id);
+        expect(pAfter?.life).toBe(5 - (i + 1));
+      }
+    }
   });
 });

@@ -65,19 +65,29 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
 
   const state = savedMatch.state;
 
-  const dispatch = (action: GameAction) => {
+  const dispatchBatch = (actions: GameAction[]) => {
     try {
+      const match = useLocalGamesStore.getState().getMatch(matchId);
+      let currentState = match?.state || state;
       const ctx = { now: Date.now(), rng: createRng(Date.now()) };
-      const { state: nextState } = reduce(state, action, ctx);
-      saveMatch(matchId, nextState);
 
-      if (action.type === 'END_ROUND') {
-        setPendingDamage({});
+      for (const action of actions) {
+        const res = reduce(currentState, action, ctx);
+        currentState = res.state;
+        if (action.type === 'END_ROUND') {
+          setPendingDamage({});
+        }
       }
+
+      saveMatch(matchId, currentState);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao processar ação';
       showToast(msg, 'error');
     }
+  };
+
+  const dispatch = (action: GameAction) => {
+    dispatchBatch([action]);
   };
 
   const selectedPlayer = state.players.find((p) => p.id === selectedPlayerId);
@@ -266,21 +276,24 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
               setPendingDamage((prev) => ({ ...prev, [playerId]: damage }));
             }}
             onSubmitReport={() => {
-              // Aplica o dano de cada jogador vivo
+              // Aplica o dano de cada jogador vivo de forma encadeada e atômica
               const alive = state.players.filter((p) => p.status === 'alive' && p.role === 'player');
+              const actions: GameAction[] = [];
               for (const p of alive) {
                 const dmg = pendingDamage[p.id] ?? 0;
-                dispatch({
+                actions.push({
                   type: 'SET_DAMAGE',
                   actorId: state.hostId,
                   targetId: p.id,
                   damage: dmg,
                 });
-                dispatch({
+                actions.push({
                   type: 'CONFIRM',
                   actorId: p.id,
                 });
               }
+              dispatchBatch(actions);
+              setPendingDamage({});
             }}
           />
         </div>
