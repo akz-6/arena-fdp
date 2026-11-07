@@ -1,22 +1,23 @@
-# Arena FDP 🃏👑
+# Arena FDP 🃏👑 — v1.0.0
 
-Plataforma digital para gerenciar partidas do jogo físico **FDP** (variação dinâmica e cartoon de truco com vidas e eliminações).
+Plataforma digital completa para gerenciar partidas do jogo físico **FDP** (variação dinâmica e cartoon de truco com vidas, eliminações e consenso).
 
-> **"A partida só acaba quando sobra um."**
+> **"A partida só acaba quando sobra um."**  
+> Produção: [https://fdp-dusky.vercel.app](https://fdp-dusky.vercel.app)
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-- **Framework:** Next.js (App Router) + React 19
+- **Framework:** Next.js (App Router, Turbopack) + React 19
 - **Linguagem:** TypeScript (estrito com `noUncheckedIndexedAccess`)
 - **Estilização:** Tailwind CSS v4 + Design Tokens Cartoon
-- **Animações:** Framer Motion (Toon Force)
+- **Animações & Efeitos:** Framer Motion (Toon Force) + Web Audio sintetizado puro
 - **Gerenciamento de Estado:** Zustand
-- **Validação:** Zod
-- **Backend & Tempo Real:** Supabase Realtime Broadcast + Route Handlers (Node.js) + CAS RPC
-- **Criptografia & Auth:** Scrypt (Node crypto nativo) + JWT HS256 (`jose`)
-- **Testes:** Vitest + React Testing Library
+- **Validação & Contratos:** Zod
+- **Backend & Tempo Real:** Supabase Realtime Broadcast + Next.js Route Handlers + Compare-and-Swap RPC (PostgreSQL)
+- **Criptografia & Auth:** Scrypt (Node.js crypto nativo) + JWT HS256 (`jose`)
+- **Testes & QA:** Vitest (126 testes unitários/propriedades) + Playwright (14 testes E2E, Axe-core WCAG 2.1 AA)
 
 ---
 
@@ -39,45 +40,54 @@ Acesse `http://localhost:3000`.
 
 ---
 
-## 🌐 Configuração do Backend Online (Supabase)
+## 🌐 Configuração do Backend Online (Supabase & Vercel)
 
-Para ativar o modo multiplayer online em tempo real:
+Para configurar o banco de dados e as variáveis no painel da Vercel para o modo multiplayer online, consulte o guia passo a passo em:
+👉 **[INSTRUCOES-VERCEL-SUPABASE.md](./INSTRUCOES-VERCEL-SUPABASE.md)**
 
-### 1. Criar projeto no Supabase
-1. Crie uma conta ou acesse [Supabase](https://supabase.com).
-2. Crie um novo projeto Postgres.
-3. No painel do projeto, abra o **SQL Editor**.
-4. Copie o conteúdo de `supabase/migrations/0001_init.sql` e execute.
-   - Isso criará as tabelas `profiles`, `rooms`, `room_secrets`, ativará o **Row Level Security (RLS)** e instalará a função de concorrência atômica `cas_update_room`.
-5. Em **Database -> Replication / Realtime**, confirme que o **Realtime Broadcast** está ativo (não há necessidade de replicar tabelas públicas, pois a comunicação utiliza canais efêmeros de broadcast autorizados).
-
-### 2. Configurar variáveis de ambiente
-Crie um arquivo `.env.local` na raiz baseado no `.env.example`:
-
+### Variáveis Necessárias (Vercel Production & Preview):
 ```bash
-# Supabase público
 NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key
-
-# Supabase Service Role (NUNCA expor no cliente)
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-publica
 SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key-secreta
-
-# Segredo de assinatura de tokens de sala e perfil (HS256)
-ROOM_TOKEN_SECRET=gerar-com-openssl-rand-base64-32
+ROOM_TOKEN_SECRET=gerado-com-openssl-rand-base64-32
 ```
 
-Para gerar o `ROOM_TOKEN_SECRET`:
-```bash
-openssl rand -base64 32
-```
-
-*(Nota: Quando as variáveis do Supabase não estão configuradas, o sistema utiliza automaticamente repositórios em memória para testes e desenvolvimento offline).*
+> **Nota de Segurança de Produção**: Em ambiente de produção (`NODE_ENV=production`), se as variáveis do Supabase não estiverem configuradas, as rotas `/api/rooms*` e `/api/profile*` retornam `503 Service Unavailable` com corpo `{ error: "not_configured" }`, desabilitando o botão online e mantendo o modo Singleplayer offline funcionando sem riscos de dessincronização. Para habilitar repositórios em memória propositalmente em CI ou testes, utilize `FDP_ALLOW_MEMORY_REPO=1`.
 
 ---
 
-## 🧪 Qualidade e Testes
+## 🧪 Qualidade, Testes e Verificação
 
-- **Typecheck:** `npm run typecheck`
-- **Lint:** `npm run lint`
-- **Testes Unitários e de Integração:** `npm run test`
-- **Build de Produção:** `npm run build`
+### 1. Verificação de Ambiente
+```bash
+# Verifica variáveis locais no .env
+node scripts/verify-env.mjs
+
+# Verifica integridade remota via endpoint de saúde
+node scripts/verify-env.mjs https://fdp-dusky.vercel.app
+```
+
+### 2. Smoke Test de Produção (Não-destrutivo)
+```bash
+node scripts/smoke-prod.mjs https://fdp-dusky.vercel.app
+```
+
+### 3. Suíte de Testes Automatizados
+```bash
+# Checagem de Tipos TypeScript (0 erros)
+npm run typecheck
+
+# Testes Unitários, de Segurança e Baseados em Propriedades (Vitest)
+npm run test
+
+# Testes de Acessibilidade (WCAG 2.1 AA), E2E e Vazamento de Vida (Playwright)
+npx playwright test --project="Desktop Chrome 1440"
+```
+
+---
+
+## 📋 Changelog
+
+Consulte o histórico detalhado de todas as alterações e correções da versão 1.0.0 em:
+👉 **[CHANGELOG.md](./CHANGELOG.md)**
