@@ -2,10 +2,13 @@
 
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GameState, Player } from '@/lib/engine/types';
+import { GameState, Player, GameConfig } from '@/lib/engine/types';
 import { ToonButton } from '../ui/ToonButton';
 import { ToonCard } from '../ui/ToonCard';
 import { Badge } from '../ui/Badge';
+import { Stepper } from '../ui/Stepper';
+import { Switch } from '../ui/Switch';
+import { Segmented } from '../ui/Segmented';
 import { Avatar } from '../toon/Avatar';
 import { QrCodeModal } from './QrCodeModal';
 import { ConnectionStatus } from '@/lib/client/realtime';
@@ -18,6 +21,8 @@ interface LobbyViewProps {
   onStartMatch: () => void;
   onKickPlayer: (targetId: string) => void;
   onLeaveRoom: () => void;
+  onTransferHost?: (newHostId: string) => void;
+  onUpdateConfig?: (config: Partial<GameConfig>) => void;
 }
 
 export const LobbyView: React.FC<LobbyViewProps> = ({
@@ -28,10 +33,20 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   onStartMatch,
   onKickPlayer,
   onLeaveRoom,
+  onTransferHost,
+  onUpdateConfig,
 }) => {
   const [showQr, setShowQr] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [kickTarget, setKickTarget] = useState<Player | null>(null);
+  const [transferTarget, setTransferTarget] = useState<Player | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState<boolean>(false);
+
+  // Estados locais do modal de configuração
+  const [cfgVisibility, setCfgVisibility] = useState<'visible' | 'hidden'>(room.config.lifeVisibility);
+  const [cfgMode, setCfgMode] = useState<'fixed' | 'random'>(room.config.lifeMode);
+  const [cfgFixed, setCfgFixed] = useState<number>(room.config.lifeFixed ?? 5);
+  const [cfgShowHitCount, setCfgShowHitCount] = useState<boolean>(room.config.showHitCount);
 
   const activePlayers = room.players.filter((p) => p.status !== 'kicked');
   const actualPlayers = activePlayers.filter((p) => p.role === 'player');
@@ -185,15 +200,28 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                       </div>
                     </div>
 
-                    {/* Botão de expulsão (visível apenas para o Host sobre outros jogadores) */}
+                    {/* Ações do Host sobre outros jogadores (Transferir Host e Expulsar) */}
                     {isHost && !isPlayerHost && (
-                      <button
-                        onClick={() => setKickTarget(player)}
-                        className="mt-3 text-xs font-bold text-red-600 hover:text-red-800 underline p-1"
-                        title="Expulsar jogador"
-                      >
-                        Expulsar ✕
-                      </button>
+                      <div className="mt-2.5 flex flex-col gap-1 w-full border-t border-gray-100 pt-2">
+                        {onTransferHost && (
+                          <button
+                            type="button"
+                            onClick={() => setTransferTarget(player)}
+                            className="text-[11px] font-bold text-toon-blue hover:underline py-0.5"
+                            title="Passar o cargo de host para este jogador"
+                          >
+                            Passar Host 👑
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setKickTarget(player)}
+                          className="text-[11px] font-bold text-red-600 hover:text-red-800 underline py-0.5"
+                          title="Expulsar jogador"
+                        >
+                          Expulsar ✕
+                        </button>
+                      </div>
                     )}
                   </ToonCard>
                 </motion.div>
@@ -256,9 +284,20 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           >
             ← Sair da Sala
           </button>
-          <span className="text-xs text-gray-400">
-            Regra: {room.config.lifeVisibility === 'hidden' ? 'Vidas Ocultas 🤫' : 'Vidas Visíveis 👀'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400">
+              Regra: {room.config.lifeVisibility === 'hidden' ? 'Vidas Ocultas 🤫' : 'Vidas Visíveis 👀'}
+            </span>
+            {isHost && onUpdateConfig && (
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(true)}
+                className="text-xs font-bold text-toon-blue hover:underline bg-blue-50 border border-blue-200 rounded-lg px-2 py-0.5 cursor-pointer"
+              >
+                ⚙️ Editar
+              </button>
+            )}
+          </div>
         </div>
       </ToonCard>
 
@@ -295,6 +334,117 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 className="w-1/2"
               >
                 EXPULSAR!
+              </ToonButton>
+            </div>
+          </ToonCard>
+        </div>
+      )}
+
+      {/* Confirmação de Transferência de Host */}
+      {transferTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <ToonCard className="max-w-sm w-full p-6 text-center space-y-4 bg-white">
+            <span className="text-4xl">👑</span>
+            <h3 className="font-cartoon text-xl text-black">TRANSFERIR HOST?</h3>
+            <p className="text-sm text-gray-700">
+              Deseja transferir a liderança da sala para <strong>{transferTarget.name}</strong>? Você deixará de ser o Host.
+            </p>
+            <div className="flex gap-2 justify-center pt-2">
+              <ToonButton
+                variant="secondary"
+                onClick={() => setTransferTarget(null)}
+                className="w-1/2"
+              >
+                CANCELAR
+              </ToonButton>
+              <ToonButton
+                variant="primary"
+                onClick={() => {
+                  if (onTransferHost) {
+                    onTransferHost(transferTarget.id);
+                  }
+                  setTransferTarget(null);
+                }}
+                className="w-1/2"
+              >
+                TRANSFERIR!
+              </ToonButton>
+            </div>
+          </ToonCard>
+        </div>
+      )}
+
+      {/* Modal de Edição de Configurações da Sala */}
+      {showConfigModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <ToonCard className="max-w-md w-full p-6 space-y-4 bg-white max-h-[90vh] overflow-y-auto">
+            <div className="text-center space-y-1">
+              <h3 className="font-cartoon text-2xl text-black">EDITAR REGRAS DA SALA ⚙️</h3>
+              <p className="text-xs text-gray-500">As alterações terão efeito imediato para todos no lobby.</p>
+            </div>
+
+            <div className="space-y-4 text-left">
+              <Segmented
+                label="Visibilidade das Vidas"
+                value={cfgVisibility}
+                onChange={setCfgVisibility}
+                options={[
+                  { label: 'Visível', value: 'visible' },
+                  { label: 'Oculta', value: 'hidden' },
+                ]}
+              />
+
+              <Segmented
+                label="Modo de Vida"
+                value={cfgMode}
+                onChange={setCfgMode}
+                options={[
+                  { label: 'Fixa', value: 'fixed' },
+                  { label: 'Aleatória', value: 'random' },
+                ]}
+              />
+
+              {cfgMode === 'fixed' && (
+                <Stepper
+                  label="Vidas Iniciais por Guerreiro"
+                  value={cfgFixed}
+                  min={1}
+                  max={20}
+                  onChange={setCfgFixed}
+                />
+              )}
+
+              <Switch
+                label="Mostrar Contagem de Golpes na Revelação"
+                checked={cfgShowHitCount}
+                onChange={setCfgShowHitCount}
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <ToonButton
+                variant="secondary"
+                onClick={() => setShowConfigModal(false)}
+                className="flex-1"
+              >
+                CANCELAR
+              </ToonButton>
+              <ToonButton
+                variant="primary"
+                onClick={() => {
+                  if (onUpdateConfig) {
+                    onUpdateConfig({
+                      lifeVisibility: cfgVisibility,
+                      lifeMode: cfgMode,
+                      lifeFixed: cfgFixed,
+                      showHitCount: cfgShowHitCount,
+                    });
+                  }
+                  setShowConfigModal(false);
+                }}
+                className="flex-1"
+              >
+                SALVAR
               </ToonButton>
             </div>
           </ToonCard>

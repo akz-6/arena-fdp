@@ -6,7 +6,7 @@ import { useLocalGamesStore } from '@/lib/client/local-game-store';
 import { reduce } from '@/lib/engine/reducer';
 import { createRng } from '@/lib/engine/rng';
 import { GameAction } from '@/lib/engine/types';
-import { RoundHeader, PlayerGrid, ReportPanel, ProposalBar } from '@/components/game';
+import { RoundHeader, PlayerGrid, ReportPanel, ProposalBar, MatchSummaryTable } from '@/components/game';
 import { FxDirector, VictoryFx } from '@/components/fx';
 import { ToonButton, ToonCard, useToast } from '@/components/ui';
 
@@ -172,23 +172,11 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
         />
 
         {/* Resumo Final da Partida */}
-        <ToonCard padding="md" className="w-full">
-          <h4 className="text-sm font-black font-[family-name:var(--font-heading)] text-[#111111] mb-2">
-            Sobreviventes e Classificação
-          </h4>
-          <div className="flex flex-col gap-1.5 text-xs">
-            {state.players.map((p, i) => (
-              <div key={p.id} className="flex justify-between items-center py-1 border-b border-gray-100 last:border-none">
-                <span className="font-bold text-[#111111]">
-                  {i + 1}. {p.name}
-                </span>
-                <span className={p.status === 'alive' ? 'text-[#2ECC71] font-black' : 'text-[#FF3038] font-bold'}>
-                  {p.status === 'alive' ? '🏆 Venceu' : '💀 Eliminado'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </ToonCard>
+        <MatchSummaryTable
+          players={state.players}
+          winners={state.winners}
+          roundNumber={state.roundNumber}
+        />
 
         <div className="w-full flex gap-3">
           <ToonButton
@@ -252,6 +240,7 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
           <ProposalBar
             selectedPlayer={selectedPlayer}
             canUndo={Boolean(state.prevSnapshot)}
+            isHost={true}
             onAdjustLife={(delta) => {
               if (selectedPlayerId) {
                 dispatch({
@@ -318,6 +307,25 @@ export default function LocalMatchClient({ matchId }: { matchId: string }) {
             showHitCount={state.config.showHitCount}
             isTelao={isTelao}
             onFinish={() => {}}
+          />
+
+          {/* Barra de Ajustes e Desfazer Rodada também na Revelação */}
+          <ProposalBar
+            selectedPlayer={selectedPlayer}
+            canUndo={Boolean(state.prevSnapshot)}
+            isHost={true}
+            onAdjustLife={(delta) => {
+              if (selectedPlayerId) {
+                dispatch({
+                  type: 'HOST_ADJUST',
+                  actorId: state.hostId,
+                  targetId: selectedPlayerId,
+                  delta,
+                });
+              }
+            }}
+            onUndoLastRound={() => dispatch({ type: 'UNDO_LAST_ROUND', actorId: state.hostId })}
+            onKickPlayer={(id) => dispatch({ type: 'KICK', actorId: state.hostId, targetId: id })}
           />
 
           {/* Botão de Avançar Rodada */}

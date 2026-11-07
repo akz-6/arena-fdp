@@ -54,6 +54,19 @@ export default function CreateRoomPage() {
   const [isLimitedPlayers, setIsLimitedPlayers] = useState(false);
   const [expectedPlayers, setExpectedPlayers] = useState(4);
   const [isCreatingOnline, setIsCreatingOnline] = useState(false);
+  const [hasSavedMatches, setHasSavedMatches] = useState(false);
+
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem('arena_fdp_local_matches_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.state?.matches && Object.keys(parsed.state.matches).length > 0) {
+          setHasSavedMatches(true);
+        }
+      }
+    } catch {}
+  }, []);
 
   const handleHostRoleChange = (role: 'player' | 'spectator') => {
     setHostRole(role);
@@ -235,6 +248,20 @@ export default function CreateRoomPage() {
           Configure a partida física e convide seus amigos
         </p>
       </div>
+
+      {/* Atalho para continuar partida local existente */}
+      {hasSavedMatches && (
+        <div className="w-full p-3 bg-yellow-50 border-2 border-[#111111] rounded-xl flex items-center justify-between shadow-[2px_2px_0px_#111111]">
+          <span className="text-xs font-bold text-[#111111]">
+            📱 Você tem partidas salvas neste aparelho.
+          </span>
+          <Link href="/local">
+            <span className="text-xs font-black text-toon-blue hover:underline">
+              Retomar ➡️
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* Passo 1: Modo de Jogo */}
       <ToonCard padding="sm" className="w-full">

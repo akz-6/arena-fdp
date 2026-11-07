@@ -9,6 +9,7 @@ import { RoundHeader } from '@/components/game/RoundHeader';
 import { PlayerGrid } from '@/components/game/PlayerGrid';
 import { OnlineReportPanel } from '@/components/game/OnlineReportPanel';
 import { ProposalBar } from '@/components/game/ProposalBar';
+import { MatchSummaryTable } from '@/components/game/MatchSummaryTable';
 import { FxDirector } from '@/components/fx/FxDirector';
 import { VictoryFx } from '@/components/fx/VictoryFx';
 import { ToonCard } from '@/components/ui/ToonCard';
@@ -169,6 +170,24 @@ export default function RoomClient({ code }: RoomClientProps) {
               showToast(msg, 'error');
             }
           }}
+          onTransferHost={async (newHostId) => {
+            try {
+              await sendAction({ type: 'TRANSFER_HOST', actorId: me.id, newHostId });
+              showToast('Host transferido com sucesso!', 'success');
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Falha ao transferir host';
+              showToast(msg, 'error');
+            }
+          }}
+          onUpdateConfig={async (config) => {
+            try {
+              await sendAction({ type: 'UPDATE_CONFIG', actorId: me.id, config });
+              showToast('Regras da sala atualizadas!', 'success');
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Falha ao atualizar regras';
+              showToast(msg, 'error');
+            }
+          }}
           onLeaveRoom={leaveRoom}
         />
       </div>
@@ -285,6 +304,21 @@ export default function RoomClient({ code }: RoomClientProps) {
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
+            onClick={async () => {
+              try {
+                await reload();
+                showToast('Estado sincronizado com o servidor!', 'success');
+              } catch {
+                showToast('Falha ao sincronizar com o servidor', 'error');
+              }
+            }}
+            title="Sincronizar manualmente"
+            className="text-xs font-bold font-[family-name:var(--font-heading)] bg-gray-100 hover:bg-yellow-200 border-2 border-black px-2.5 py-1 rounded-xl shadow-[2px_2px_0px_#111111] cursor-pointer"
+          >
+            🔄 Sincronizar
+          </button>
+          <button
             onClick={toggleFullscreen}
             className="text-xs font-bold font-[family-name:var(--font-heading)] bg-gray-100 hover:bg-gray-200 border-2 border-black px-3 py-1 rounded-xl shadow-[2px_2px_0px_#111111]"
           >
@@ -392,14 +426,21 @@ export default function RoomClient({ code }: RoomClientProps) {
 
       {/* Fase 4: Fim de Jogo e Vitória */}
       {isFinished && (
-        <VictoryFx
-          isTie={(room.winners?.length ?? 0) > 1}
-          winnerName={room.players.find((p) => p.id === room.winners?.[0])?.name}
-          winnerColor={room.players.find((p) => p.id === room.winners?.[0])?.color}
-          tiedWinners={room.players
-            .filter((p) => room.winners?.includes(p.id))
-            .map((p) => ({ name: p.name, color: p.color }))}
-        />
+        <>
+          <VictoryFx
+            isTie={(room.winners?.length ?? 0) > 1}
+            winnerName={room.players.find((p) => p.id === room.winners?.[0])?.name}
+            winnerColor={room.players.find((p) => p.id === room.winners?.[0])?.color}
+            tiedWinners={room.players
+              .filter((p) => room.winners?.includes(p.id))
+              .map((p) => ({ name: p.name, color: p.color }))}
+          />
+          <MatchSummaryTable
+            players={room.players}
+            winners={room.winners}
+            roundNumber={room.roundNumber}
+          />
+        </>
       )}
 
       {isFinished && isHostControl && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -14,6 +14,19 @@ export default function HomePage() {
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [roomCode, setRoomCode] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [hasSavedMatches, setHasSavedMatches] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('arena_fdp_local_matches_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.state?.matches && Object.keys(parsed.state.matches).length > 0) {
+          setHasSavedMatches(true);
+        }
+      }
+    } catch {}
+  }, []);
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +81,7 @@ export default function HomePage() {
             src="/logo.png"
             alt="Arena FDP Logo Oficial"
             fill
+            sizes="(max-width: 640px) 176px, 224px"
             className="object-contain"
             priority
           />
@@ -96,6 +110,14 @@ export default function HomePage() {
 
       {/* Ações Principais da Home */}
       <div className="w-full max-w-xs flex flex-col gap-3">
+        {hasSavedMatches && (
+          <Link href="/local" className="w-full">
+            <ToonButton variant="yellow" size="md" fullWidth>
+              📱 CONTINUAR PARTIDA LOCAL
+            </ToonButton>
+          </Link>
+        )}
+
         <Link href="/criar" className="w-full">
           <ToonButton variant="primary" size="lg" fullWidth>
             🎮 CRIAR SALA
