@@ -3,7 +3,21 @@ import { SignJWT, jwtVerify } from 'jose';
 
 const DEFAULT_SECRET = 'arena-fdp-insecure-dev-secret-do-not-use-in-production-32chars';
 
+export function isTokenSecretOk(): boolean {
+  const secret = process.env.ROOM_TOKEN_SECRET;
+  return Boolean(secret && secret !== DEFAULT_SECRET && secret.length >= 32);
+}
+
+export function assertTokenSecretValid(): void {
+  const isProd = process.env.NODE_ENV === 'production' && process.env.FDP_ALLOW_MEMORY_REPO !== '1';
+  if (!isProd) return;
+  if (!isTokenSecretOk()) {
+    throw new Error('ROOM_TOKEN_SECRET must be configured in production with at least 32 characters');
+  }
+}
+
 function getJwtSecret(): Uint8Array {
+  assertTokenSecretValid();
   const secret = process.env.ROOM_TOKEN_SECRET || DEFAULT_SECRET;
   return new TextEncoder().encode(secret);
 }

@@ -2,6 +2,7 @@ import 'server-only';
 import { GameState, GameConfig, Player } from '../engine/types';
 import { projectPublic } from '../engine/project';
 import { getSupabaseAdmin } from './supabase';
+import { BackendNotConfiguredError } from './backend-config';
 
 export interface RoomRecord {
   id: string;
@@ -394,10 +395,13 @@ const memoryInstance = new MemoryRoomsRepository();
 const supabaseInstance = new SupabaseRoomsRepository();
 
 export function getRoomsRepository(): IRoomsRepository {
-  if (process.env.NODE_ENV === 'test' || !getSupabaseAdmin()) {
+  if (getSupabaseAdmin()) {
+    return supabaseInstance;
+  }
+  if (process.env.FDP_ALLOW_MEMORY_REPO === '1' || process.env.NODE_ENV !== 'production') {
     return memoryInstance;
   }
-  return supabaseInstance;
+  throw new BackendNotConfiguredError();
 }
 
 export function getMemoryRoomsRepository(): MemoryRoomsRepository {

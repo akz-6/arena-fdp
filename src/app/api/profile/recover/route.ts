@@ -3,8 +3,12 @@ import { RecoverProfileSchema } from '@/lib/contracts';
 import { getProfileRepository } from '@/lib/server/profile-repo';
 import { signProfileToken } from '@/lib/server/auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
+import { isBackendConfigured, notConfiguredResponse, BackendNotConfiguredError } from '@/lib/server/backend-config';
 
 export async function POST(req: NextRequest) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
   const ip = req.headers.get('x-forwarded-for') || 'local';
   const rl = checkRateLimit(`profile:recover:${ip}`, { windowMs: 60_000, max: 10 });
   if (!rl.success) {

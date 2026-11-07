@@ -6,11 +6,15 @@ import { getRoomsRepository } from '@/lib/server/rooms-repo';
 import { verifyRoomToken, extractBearerToken } from '@/lib/server/auth';
 import { broadcastRoomState } from '@/lib/server/broadcast';
 import { isValidRoomCode } from '@/lib/server/code';
+import { isBackendConfigured, notConfiguredResponse } from '@/lib/server/backend-config';
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ code: string }> }
 ) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
   const { code } = await params;
   const cleanCode = code.trim().toUpperCase();
 

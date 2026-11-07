@@ -81,21 +81,37 @@ export default function RoomClient({ code }: RoomClientProps) {
     );
   }
 
-  // Erro (ex: sala inexistente)
+  // Erro (ex: sala inexistente ou backend não configurado)
   if (error && !minimalInfo && !room) {
+    const isNotConfigured =
+      error.includes('Online indisponível') ||
+      error.includes('not_configured') ||
+      error.includes('503');
+
     return (
       <div className="max-w-md mx-auto my-12 p-4">
         <ToonCard className="p-6 text-center space-y-4">
-          <div className="text-5xl">💥</div>
+          <div className="text-5xl">{isNotConfigured ? '🔌' : '💥'}</div>
           <h2 className="font-black font-[family-name:var(--font-heading)] text-2xl text-black">
-            {error}
+            {isNotConfigured
+              ? 'Online indisponível no momento'
+              : error}
           </h2>
-          <p className="text-sm text-gray-600">
-            Verifique se o código <strong>{code}</strong> foi digitado corretamente ou se a sala já expirou após 24 horas.
+          <p className="text-sm text-gray-600 font-medium">
+            {isNotConfigured
+              ? 'O modo Singleplayer (offline neste aparelho) continua funcionando normalmente!'
+              : `Verifique se o código ${code} foi digitado corretamente ou se a sala já expirou após 24 horas.`}
           </p>
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col gap-2">
+            {isNotConfigured && (
+              <Link href="/criar">
+                <ToonButton variant="primary" className="w-full">
+                  📱 JOGAR MODO SINGLEPLAYER
+                </ToonButton>
+              </Link>
+            )}
             <Link href="/">
-              <ToonButton variant="primary" className="w-full">
+              <ToonButton variant="secondary" className="w-full">
                 VOLTAR PARA O INÍCIO
               </ToonButton>
             </Link>

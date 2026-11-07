@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getProfileRepository } from '@/lib/server/profile-repo';
+import { isBackendConfigured, notConfiguredResponse, BackendNotConfiguredError } from '@/lib/server/backend-config';
 
 export async function GET(req: NextRequest) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
   const { searchParams } = new URL(req.url);
   const name = searchParams.get('name');
 

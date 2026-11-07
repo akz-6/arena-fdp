@@ -1,5 +1,6 @@
 import 'server-only';
 import { getSupabaseAdmin } from './supabase';
+import { BackendNotConfiguredError } from './backend-config';
 import { hashSecret, verifySecret } from './hash';
 
 export interface ProfileRecord {
@@ -309,10 +310,13 @@ const memoryProfiles = new MemoryProfileRepository();
 const supabaseProfiles = new SupabaseProfileRepository();
 
 export function getProfileRepository(): IProfileRepository {
-  if (process.env.NODE_ENV === 'test' || !getSupabaseAdmin()) {
+  if (getSupabaseAdmin()) {
+    return supabaseProfiles;
+  }
+  if (process.env.FDP_ALLOW_MEMORY_REPO === '1' || process.env.NODE_ENV !== 'production') {
     return memoryProfiles;
   }
-  return supabaseProfiles;
+  throw new BackendNotConfiguredError();
 }
 
 export function getMemoryProfileRepository(): MemoryProfileRepository {

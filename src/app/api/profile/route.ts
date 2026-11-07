@@ -4,8 +4,12 @@ import { getProfileRepository } from '@/lib/server/profile-repo';
 import { generateRecoveryCode } from '@/lib/server/hash';
 import { signProfileToken, verifyProfileToken, extractBearerToken } from '@/lib/server/auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
+import { isBackendConfigured, notConfiguredResponse, BackendNotConfiguredError } from '@/lib/server/backend-config';
 
 export async function POST(req: NextRequest) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
   const ip = req.headers.get('x-forwarded-for') || 'local';
   const rl = checkRateLimit(`profile:post:${ip}`, { windowMs: 60_000, max: 15 });
   if (!rl.success) {
@@ -67,6 +71,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
+    if (err instanceof BackendNotConfiguredError) {
+      return notConfiguredResponse();
+    }
     console.error('Erro em POST /api/profile:', err);
     return NextResponse.json(
       { error: 'Erro interno ao processar o perfil', code: 'INTERNAL' },
@@ -76,6 +83,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
+
   const token = extractBearerToken(req.headers.get('authorization'));
   if (!token) {
     return NextResponse.json(

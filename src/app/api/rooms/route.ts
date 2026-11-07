@@ -7,8 +7,12 @@ import { generateRoomCode } from '@/lib/server/code';
 import { hashPassword } from '@/lib/server/hash';
 import { signRoomToken } from '@/lib/server/auth';
 import { checkRateLimit } from '@/lib/server/rate-limit';
+import { isBackendConfigured, notConfiguredResponse, BackendNotConfiguredError } from '@/lib/server/backend-config';
 
 export async function POST(req: NextRequest) {
+  if (!isBackendConfigured()) {
+    return notConfiguredResponse();
+  }
   const ip = req.headers.get('x-forwarded-for') || 'local';
   const rl = checkRateLimit(`rooms:create:${ip}`, { windowMs: 60_000, max: 20 });
   if (!rl.success) {
@@ -81,6 +85,9 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (err) {
+    if (err instanceof BackendNotConfiguredError) {
+      return notConfiguredResponse();
+    }
     console.error('Erro em POST /api/rooms:', err);
     return NextResponse.json(
       { error: 'Erro interno ao criar sala', code: 'INTERNAL' },

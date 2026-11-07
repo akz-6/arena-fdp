@@ -32,10 +32,19 @@ async function handleResponse<T>(res: Response): Promise<T> {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const errorData = data as ApiErrorResponse;
+    const isNotConfigured =
+      res.status === 503 ||
+      errorData.error === 'not_configured' ||
+      errorData.code === 'not_configured';
+
+    const message = isNotConfigured
+      ? 'Online indisponível no momento. O modo Singleplayer continua funcionando.'
+      : errorData.error || `Erro HTTP ${res.status}`;
+
     throw new ApiError(
-      errorData.error || `Erro HTTP ${res.status}`,
+      message,
       res.status,
-      errorData.code,
+      isNotConfigured ? 'not_configured' : errorData.code,
       errorData.details
     );
   }

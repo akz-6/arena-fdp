@@ -229,6 +229,6 @@ export interface RoomActionResponse {
 
 export interface ApiErrorResponse {
   error: string;
-  code?: 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION' | 'RULE_VIOLATION' | 'RATE_LIMITED' | 'INTERNAL';
+  code?: 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION' | 'RULE_VIOLATION' | 'RATE_LIMITED' | 'INTERNAL' | 'not_configured';
   details?: unknown;
 }
